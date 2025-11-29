@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chuẩn Hóa Báo Cáo Word</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f6fb;
+            margin: 0;
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+            color: #2b2d42;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-top: 30px;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 12px 25px rgba(43, 45, 66, 0.08);
+            border: 1px solid #edf2f7;
+        }
+        label {
+            font-weight: 600;
+            color: #4a4e69;
+            margin-bottom: 6px;
+            display: block;
+        }
+        input,
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5f5;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        textarea {
+            min-height: 140px;
+            resize: vertical;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .note {
+            background: #f0f5ff;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #4a4e69;
+            margin-bottom: 16px;
+        }
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            color: #2b2d42;
+            font-size: 14px;
+        }
+        .options-card {
+            grid-column: 1 / -1;
+        }
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+        .option-item {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            font-size: 14px;
+            color: #334155;
+        }
+        .option-item input {
+            margin-top: 3px;
+        }
+        .option-inline {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .option-inline label {
+            margin: 0;
+        }
+        select {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5f5;
+            font-size: 14px;
+        }
+        .mini-note {
+            font-size: 13px;
+            color: #6b7280;
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>📄 Chuẩn Hóa Báo Cáo Word</h1>
+    <div class="grid">
+        <div class="card">
+            <h2>Tạo báo cáo mới</h2>
+            <p class="note">Nhập thông tin để tạo file Word theo mẫu chuẩn.</p>
+            <form id="generateForm">
+                <label for="studentName">Họ tên</label>
+                <input id="studentName" name="studentName" placeholder="Nguyễn Văn A" required />
+
+                <label for="className">Lớp/Khoa</label>
+                <input id="className" name="className" placeholder="Công nghệ thông tin K45" required />
+
+                <label for="reportTitle">Tiêu đề báo cáo</label>
+                <input id="reportTitle" name="reportTitle" placeholder="Báo cáo môn..." required />
+
+                <label for="year">Năm học</label>
+                <input id="year" name="year" placeholder="2024-2025" required />
+
+                <label for="content">Nội dung</label>
+                <textarea id="content" name="content" placeholder="Tóm tắt nội dung..." required></textarea>
+
+                <button type="submit">Tạo file Word</button>
+                <p class="status" id="generateStatus"></p>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Chuẩn hóa file có sẵn</h2>
+            <p class="note">Tải lên file Word chưa đúng format để hệ thống chuẩn hóa.</p>
+            <form id="formatForm">
+                <label for="reportFile">Chọn file .docx</label>
+                <input type="file" id="reportFile" accept=".docx" required />
+                <button type="submit">Chuẩn hóa file Word</button>
+                <p class="status" id="formatStatus"></p>
+            </form>
+        </div>
+
+        <div class="card options-card">
+            <h2>Tùy chọn định dạng UEL</h2>
+            <p class="mini-note">Áp dụng cho cả việc tạo mẫu mới và chuẩn hóa file tải lên.</p>
+            <div class="option-grid">
+                <label class="option-item">
+                    <input type="checkbox" id="optClean" checked />
+                    <span>Xóa dòng trống & dấu cách thừa</span>
+                </label>
+                <label class="option-item">
+                    <input type="checkbox" id="optFont" checked />
+                    <span>Áp dụng font Times New Roman 13pt / 14pt</span>
+                </label>
+                <label class="option-item">
+                    <input type="checkbox" id="optMargins" checked />
+                    <span>Thiết lập lề chuẩn UEL (Trái 3.5cm, Phải 2cm, Trên/Dưới 2.5cm)</span>
+                </label>
+                <label class="option-item">
+                    <input type="checkbox" id="optSpacing" checked />
+                    <span>Thụt đầu dòng 1cm và giãn dòng 1.3</span>
+                </label>
+                <label class="option-item">
+                    <input type="checkbox" id="optHeading" checked />
+                    <span>Nhận diện & chuẩn hóa tiêu đề</span>
+                </label>
+                <label class="option-item">
+                    <input type="checkbox" id="optTables" checked />
+                    <span>Chuẩn hóa định dạng trong bảng</span>
+                </label>
+                <label class="option-item">
+                    <input type="checkbox" id="optToc" checked />
+                    <span>Chèn mục lục tự động</span>
+                </label>
+                <label class="option-item">
+                    <input type="checkbox" id="optPageNumbers" checked />
+                    <span>Đánh số trang ở giữa chân trang</span>
+                </label>
+            </div>
+            <div class="option-inline">
+                <label for="optPageStyle">Kiểu số trang:</label>
+                <select id="optPageStyle">
+                    <option value="arabic">Số Ả Rập (1,2,3...)</option>
+                    <option value="roman">Số La Mã (i, ii, iii...)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        const optionMap = {
+            clean_whitespace: 'optClean',
+            normalize_font: 'optFont',
+            adjust_margins: 'optMargins',
+            indent_spacing: 'optSpacing',
+            heading_detection: 'optHeading',
+            format_tables: 'optTables',
+            insert_toc: 'optToc',
+            add_page_numbers: 'optPageNumbers'
+        };
+
+        const collectOptions = () => {
+            const options = {};
+            Object.entries(optionMap).forEach(([key, id]) => {
+                const el = document.getElementById(id);
+                options[key] = el ? el.checked : true;
+            });
+            options.page_number_style = document.getElementById('optPageStyle').value;
+            return options;
+        };
+
+        async function downloadBlob(response, prefix) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${prefix}-${Date.now()}.docx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        const generateForm = document.getElementById('generateForm');
+        const generateStatus = document.getElementById('generateStatus');
+        generateForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            generateStatus.textContent = 'Đang tạo file...';
+            const button = generateForm.querySelector('button');
+            button.disabled = true;
+
+            const payload = {
+                studentName: generateForm.studentName.value,
+                className: generateForm.className.value,
+                reportTitle: generateForm.reportTitle.value,
+                year: generateForm.year.value,
+                content: generateForm.content.value,
+                options: collectOptions()
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/api/generate-report`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Không thể tạo báo cáo');
+                }
+
+                await downloadBlob(response, 'bao-cao-mau');
+                generateStatus.textContent = '✅ Đã tạo file thành công!';
+                generateForm.reset();
+            } catch (error) {
+                generateStatus.textContent = `❌ ${error.message}`;
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+        const formatForm = document.getElementById('formatForm');
+        const formatStatus = document.getElementById('formatStatus');
+
+        formatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('reportFile');
+            if (!fileInput.files.length) {
+                formatStatus.textContent = '❌ Vui lòng chọn file';
+                return;
+            }
+
+            formatStatus.textContent = 'Đang chuẩn hóa file...';
+            const button = formatForm.querySelector('button');
+            button.disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('options', JSON.stringify(collectOptions()));
+
+            try {
+                const response = await fetch(`${API_BASE}/api/format-report`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Không thể chuẩn hóa file');
+                }
+
+                await downloadBlob(response, 'bao-cao-chuan');
+                formatStatus.textContent = '✅ Đã chuẩn hóa xong!';
+                formatForm.reset();
+            } catch (error) {
+                formatStatus.textContent = `❌ ${error.message}`;
+            } finally {
+                button.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
+
