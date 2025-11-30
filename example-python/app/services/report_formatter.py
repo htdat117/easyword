@@ -1,6 +1,7 @@
 import logging
 import re
 from io import BytesIO
+from html import escape
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
@@ -121,61 +122,97 @@ def _insert_paragraph_after(paragraph, text=""):
 
 
 def _copy_heading_style_to_toc(doc):
-    # Đảm bảo các style TOC luôn được thiết lập đúng, bất kể có heading hay không
-    for depth in range(1, 4):
+    """
+    Định dạng lại các style TOC để:
+    - Font: Times New Roman
+    - Cỡ chữ: 13pt
+    - Không thụt lề trái (0cm)
+    """
+    for depth in range(1, 10):  # Xử lý TOC 1 đến TOC 9
         style_name = f"TOC {depth}"
         try:
             style = doc.styles[style_name]
         except KeyError:
             continue
 
-        fmt = style.paragraph_format
-        
-        # Đặt mục lục không thụt lề, căn thẳng với lề trái - BẮT BUỘC về 0
-        fmt.left_indent = None  # Xóa indent bằng cách đặt về None trước
-        fmt.first_line_indent = None
-        fmt.right_indent = None
-        
-        # Sau đó đặt về 0 một cách rõ ràng
-        fmt.left_indent = Pt(0)
-        fmt.first_line_indent = Pt(0)
-        fmt.right_indent = Pt(0)
-        
-        # Đặt alignment về Left để đảm bảo căn trái
-        fmt.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        
-        # Xử lý trực tiếp XML để đảm bảo indent được xóa hoàn toàn
+        # Xử lý Paragraph Format (pPr) - Indent
         try:
             p_pr = style._element.get_or_add_pPr()
-            # Tìm và xóa element indent cũ (nếu có)
+            
+            # Xóa tất cả các element indent cũ
             for child in list(p_pr):
-                if child.tag.endswith("ind"):
+                if child.tag.endswith("}ind") or child.tag.endswith("ind"):
                     p_pr.remove(child)
             
-            # Tạo lại indent element với giá trị 0 (tính bằng twips: 1cm = 567 twips)
+            # Tạo lại indent element với giá trị 0 (twips: 0 = 0cm)
             ind_elem = OxmlElement("w:ind")
-            ind_elem.set(qn("w:left"), "0")  # 0 twips = 0cm
+            ind_elem.set(qn("w:left"), "0")
             ind_elem.set(qn("w:right"), "0")
             ind_elem.set(qn("w:firstLine"), "0")
+            ind_elem.set(qn("w:hanging"), "0")
             p_pr.append(ind_elem)
-        except Exception:
-            pass
-        
-        # Đặt font Times New Roman và cỡ chữ 13pt cho mục lục
-        font = style.font
-        font.name = STANDARD_FONT
-        font.size = TOC_FONT_SIZE
-        
-        # Đảm bảo East Asia font cũng là Times New Roman
+            
+            # Đặt alignment về Left
+            jc_elem = p_pr.find(qn("w:jc"))
+            if jc_elem is not None:
+                p_pr.remove(jc_elem)
+            jc_elem = OxmlElement("w:jc")
+            jc_elem.set(qn("w:val"), "left")
+            p_pr.append(jc_elem)
+        except Exception as e:
+            logging.warning(f"Không thể xử lý paragraph format cho {style_name}: {e}")
+
+        # Xử lý Run Format (rPr) - Font
         try:
+            # Lấy hoặc tạo rPr element
             r_pr = style._element.get_or_add_rPr()
-            r_fonts = r_pr.rFonts
-            if r_fonts is None:
-                r_fonts = OxmlElement("w:rFonts")
-                r_pr.append(r_fonts)
-            r_fonts.set(qn("w:eastAsia"), STANDARD_FONT)
-        except Exception:
-            pass
+            
+            # Xóa font element cũ nếu có
+            r_fonts_old = r_pr.find(qn("w:rFonts"))
+            if r_fonts_old is not None:
+                r_pr.remove(r_fonts_old)
+            
+            # Tạo lại rFonts với Times New Roman cho tất cả các loại font
+            r_fonts = OxmlElement("w:rFonts")
+            r_fonts.set(qn("w:ascii"), STANDARD_FONT)      # Font cho ASCII
+            r_fonts.set(qn("w:hAnsi"), STANDARD_FONT)      # Font cho H-ANSI
+            r_fonts.set(qn("w:eastAsia"), STANDARD_FONT)   # Font cho East Asia (Tiếng Việt)
+            r_fonts.set(qn("w:cs"), STANDARD_FONT)         # Font cho Complex Scripts
+            r_pr.append(r_fonts)
+            
+            # Xóa size element cũ nếu có
+            sz_old = r_pr.find(qn("w:sz"))
+            if sz_old is not None:
+                r_pr.remove(sz_old)
+            sz_old = r_pr.find(qn("w:szCs"))
+            if sz_old is not None:
+                r_pr.remove(sz_old)
+            
+            # Tạo lại size element (font size tính bằng half-points: 13pt = 26 half-points)
+            sz_elem = OxmlElement("w:sz")
+            sz_elem.set(qn("w:val"), "26")  # 13pt = 26 half-points
+            r_pr.append(sz_elem)
+            
+            sz_cs_elem = OxmlElement("w:szCs")
+            sz_cs_elem.set(qn("w:val"), "26")  # 13pt = 26 half-points
+            r_pr.append(sz_cs_elem)
+            
+        except Exception as e:
+            logging.warning(f"Không thể xử lý font cho {style_name}: {e}")
+        
+        # Cũng thiết lập qua API của python-docx để đảm bảo
+        try:
+            fmt = style.paragraph_format
+            fmt.left_indent = Pt(0)
+            fmt.first_line_indent = Pt(0)
+            fmt.right_indent = Pt(0)
+            fmt.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            
+            font = style.font
+            font.name = STANDARD_FONT
+            font.size = TOC_FONT_SIZE
+        except Exception as e:
+            logging.warning(f"Không thể thiết lập style qua API cho {style_name}: {e}")
 
 
 def _insert_table_of_contents(doc, options, anchor=None):
@@ -241,18 +278,32 @@ def _apply_page_numbers(doc, options):
 
     for section in doc.sections:
         footer = section.footer
-        if footer.paragraphs:
-            para = footer.paragraphs[0]
-            para.text = ""
-        else:
-            para = footer.add_paragraph()
+        # Xóa hết các old paragraphs nếu có và làm mới (tránh lỗi style cũ)
+        while footer.paragraphs:
+            p = footer.paragraphs[0]
+            _remove_paragraph(p)
+        para = footer.add_paragraph()
         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # Đảm bảo paragraph này luôn đúng style
+        para.style.font.name = STANDARD_FONT
+        para.style.font.size = PAGE_NUMBER_FONT_SIZE
 
         run = para.add_run()
         fld = OxmlElement("w:fldSimple")
         fld.set(qn("w:instr"), instr)
         run._r.append(fld)
         _set_run_format(run, PAGE_NUMBER_FONT_SIZE, bold=False)
+        run.font.name = STANDARD_FONT
+        run.font.size = PAGE_NUMBER_FONT_SIZE
+
+        # Ép lại mọi run trong đoạn này (dù thực tế chỉ một)
+        for r in para.runs:
+            try:
+                r.font.name = STANDARD_FONT
+                r.font.size = PAGE_NUMBER_FONT_SIZE
+            except Exception:
+                pass
 
 
 def _standardize_paragraph(paragraph, options):
@@ -314,6 +365,10 @@ def apply_standard_formatting(doc: Document, options=None):
         except Exception:
             logging.warning("Không thể áp dụng lề cho tài liệu.")
 
+    # Định dạng TOC styles TRƯỚC khi xử lý paragraphs để đảm bảo style đúng
+    # (kể cả khi document đã có TOC sẵn)
+    _copy_heading_style_to_toc(doc)
+
     for paragraph in list(doc.paragraphs):
         _standardize_paragraph(paragraph, options)
 
@@ -325,6 +380,10 @@ def apply_standard_formatting(doc: Document, options=None):
                         _standardize_paragraph(paragraph, options)
 
     _insert_table_of_contents(doc, options, anchor=_find_toc_anchor(doc))
+    
+    # Định dạng lại TOC styles SAU KHI chèn TOC để đảm bảo override mọi style mặc định
+    _copy_heading_style_to_toc(doc)
+    
     _apply_page_numbers(doc, options)
     return doc
 
@@ -420,4 +479,136 @@ def format_uploaded_stream(file_bytes, filename, options_payload):
     apply_standard_formatting(doc, options)
     safe_name = f"formatted-{filename}"
     return build_report_stream(doc, safe_name)
+
+
+def docx_to_html(doc: Document) -> str:
+    """Convert Word document sang HTML để preview"""
+    html_parts = ['<div class="docx-preview" style="font-family: \'Times New Roman\', serif; max-width: 210mm; margin: 0 auto; padding: 20mm 35mm 20mm 25mm; background: white; line-height: 1.3;">']
+    
+    for paragraph in doc.paragraphs:
+        if not paragraph.text.strip():
+            html_parts.append('<p style="margin: 0.5em 0;"><br></p>')
+            continue
+        
+        style_name = paragraph.style.name if paragraph.style else ""
+        is_heading = style_name.lower().startswith("heading") if style_name else False
+        
+        # Xác định tag và style
+        if is_heading:
+            level = 1
+            if "heading" in style_name.lower():
+                try:
+                    level = int(style_name.split()[-1]) if style_name.split()[-1].isdigit() else 1
+                except:
+                    level = 1
+            level = min(max(level, 1), 6)
+            tag = f"h{level}"
+        else:
+            tag = "p"
+        
+        # Xác định alignment
+        alignment_map = {
+            WD_ALIGN_PARAGRAPH.CENTER: "center",
+            WD_ALIGN_PARAGRAPH.RIGHT: "right",
+            WD_ALIGN_PARAGRAPH.JUSTIFY: "justify",
+            WD_ALIGN_PARAGRAPH.LEFT: "left",
+        }
+        align = alignment_map.get(paragraph.alignment, "left")
+        
+        # Xây dựng style
+        para_style = f"text-align: {align};"
+        if is_heading:
+            para_style += " font-weight: bold; margin: 12pt 0;"
+            if level == 1:
+                para_style += " font-size: 14pt;"
+            else:
+                para_style += " font-size: 13pt;"
+        else:
+            para_style += " font-size: 13pt; text-indent: 1cm; margin: 6pt 0;"
+        
+        # Xử lý runs (text formatting)
+        html_parts.append(f'<{tag} style="{para_style}">')
+        
+        if paragraph.runs:
+            for run in paragraph.runs:
+                run_text = escape(run.text)
+                if not run_text:
+                    continue
+                
+                run_style = ""
+                if run.bold:
+                    run_style += "font-weight: bold; "
+                if run.italic:
+                    run_style += "font-style: italic; "
+                if run.underline:
+                    run_style += "text-decoration: underline; "
+                
+                if run_style:
+                    html_parts.append(f'<span style="{run_style}">{run_text}</span>')
+                else:
+                    html_parts.append(run_text)
+        else:
+            html_parts.append(escape(paragraph.text))
+        
+        html_parts.append(f'</{tag}>')
+    
+    # Xử lý tables
+    for table in doc.tables:
+        html_parts.append('<table style="width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: 13pt;">')
+        for row in table.rows:
+            html_parts.append('<tr>')
+            for cell in row.cells:
+                cell_text = escape(cell.text.strip().replace('\n', '<br>'))
+                html_parts.append(f'<td style="border: 1px solid #ddd; padding: 8px;">{cell_text}</td>')
+            html_parts.append('</tr>')
+        html_parts.append('</table>')
+    
+    html_parts.append('</div>')
+    
+    # Wrap trong HTML đầy đủ với CSS
+    full_html = f"""<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xem trước</title>
+    <style>
+        body {{
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            font-family: 'Times New Roman', serif;
+        }}
+        .docx-preview {{
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            min-height: 297mm;
+            box-sizing: border-box;
+        }}
+        @media print {{
+            body {{
+                background: white;
+                padding: 0;
+            }}
+            .docx-preview {{
+                box-shadow: none;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    {''.join(html_parts)}
+</body>
+</html>"""
+    
+    return full_html
+
+
+def docx_to_html_stream(doc: Document) -> BytesIO:
+    """Convert Word document sang HTML stream"""
+    html_content = docx_to_html(doc)
+    html_bytes = html_content.encode('utf-8')
+    stream = BytesIO(html_bytes)
+    stream.seek(0)
+    return stream
 

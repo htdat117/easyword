@@ -123,9 +123,140 @@
             font-size: 13px;
             color: #6b7280;
         }
+        .preview-container {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .preview-info {
+            margin-bottom: 16px;
+        }
+        .preview-info p {
+            margin: 8px 0;
+            color: #334155;
+        }
+        .preview-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .preview-frame-container {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        h3 {
+            color: #2b2d42;
+            font-size: 18px;
+            margin-bottom: 16px;
+        }
+        /* Modal/Popup styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-in;
+        }
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 1200px;
+            height: 90vh;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #edf2f7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            margin: 0;
+            color: #2b2d42;
+            font-size: 18px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #718096;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .modal-close:hover {
+            background: #edf2f7;
+            color: #2b2d42;
+        }
+        .modal-body {
+            flex: 1;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .modal-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #718096;
+            font-size: 16px;
+        }
         @media (max-width: 600px) {
             body {
                 padding: 16px;
+            }
+            .preview-actions {
+                flex-direction: column;
+            }
+            .modal-content {
+                width: 95%;
+                height: 95vh;
             }
         }
     </style>
@@ -166,6 +297,25 @@
                 <button type="submit">Chuẩn hóa file Word</button>
                 <p class="status" id="formatStatus"></p>
             </form>
+            
+            <!-- Preview Section -->
+            <div id="previewSection" style="display: none; margin-top: 24px; padding-top: 24px; border-top: 2px solid #edf2f7;">
+                <h3 style="margin-top: 0; color: #2b2d42;">Xem trước file đã chuẩn hóa</h3>
+                <div class="preview-container">
+                    <div class="preview-info">
+                        <p><strong>File:</strong> <span id="previewFilename"></span></p>
+                        <p class="mini-note">File đã được chuẩn hóa thành công. Bạn có thể xem trước trước khi tải về.</p>
+                    </div>
+                    <div class="preview-actions">
+                        <button id="previewBtn" type="button" style="background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); margin-bottom: 12px;">
+                            👁️ Xem trước
+                        </button>
+                        <button id="downloadBtn" type="button" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
+                            ⬇️ Tải file về máy
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="card options-card">
@@ -211,6 +361,22 @@
                     <option value="arabic">Số Ả Rập (1,2,3...)</option>
                     <option value="roman">Số La Mã (i, ii, iii...)</option>
                 </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal/Popup for PDF Preview -->
+    <div id="previewModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Xem trước file đã chuẩn hóa</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-loading" id="modalLoading">
+                    Đang tải file PDF...
+                </div>
+                <iframe id="pdfViewer" style="display: none;"></iframe>
             </div>
         </div>
     </div>
@@ -292,6 +458,12 @@
 
         const formatForm = document.getElementById('formatForm');
         const formatStatus = document.getElementById('formatStatus');
+        const previewSection = document.getElementById('previewSection');
+        const previewFilename = document.getElementById('previewFilename');
+        const previewBtn = document.getElementById('previewBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        let currentPreviewData = null;
 
         formatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -304,6 +476,9 @@
             formatStatus.textContent = 'Đang chuẩn hóa file...';
             const button = formatForm.querySelector('button');
             button.disabled = true;
+            
+            // Ẩn preview section nếu có
+            previewSection.style.display = 'none';
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
@@ -320,13 +495,110 @@
                     throw new Error(err.error || 'Không thể chuẩn hóa file');
                 }
 
-                await downloadBlob(response, 'bao-cao-chuan');
-                formatStatus.textContent = '✅ Đã chuẩn hóa xong!';
-                formatForm.reset();
+                const result = await response.json();
+                
+                if (result.success) {
+                    formatStatus.textContent = '✅ Đã chuẩn hóa xong!';
+                    currentPreviewData = result;
+                    
+                    // Hiển thị preview section
+                    previewFilename.textContent = result.filename || 'bao-cao-chuan.docx';
+                    previewSection.style.display = 'block';
+                    
+                    // Reset form file input nhưng giữ lại thông tin
+                    fileInput.value = '';
+                } else {
+                    throw new Error('Không thể chuẩn hóa file');
+                }
             } catch (error) {
                 formatStatus.textContent = `❌ ${error.message}`;
+                previewSection.style.display = 'none';
             } finally {
                 button.disabled = false;
+            }
+        });
+
+        const previewModal = document.getElementById('previewModal');
+        const pdfViewer = document.getElementById('pdfViewer');
+        const modalLoading = document.getElementById('modalLoading');
+        const closeModal = document.getElementById('closeModal');
+
+        previewBtn.addEventListener('click', async () => {
+            if (!currentPreviewData) return;
+            
+            // Hiển thị modal
+            previewModal.classList.add('active');
+            modalLoading.style.display = 'flex';
+            modalLoading.innerHTML = 'Đang tải file preview...';
+            pdfViewer.style.display = 'none';
+            
+            const previewUrl = `${API_BASE}${currentPreviewData.preview_url}`;
+            
+            try {
+                // Load HTML preview vào iframe
+                pdfViewer.src = previewUrl;
+                
+                // Set timeout để kiểm tra nếu không load được
+                const loadTimeout = setTimeout(() => {
+                    if (pdfViewer.style.display === 'none') {
+                        modalLoading.innerHTML = '⏳ Đang xử lý file. Vui lòng đợi...';
+                    }
+                }, 5000);
+                
+                // Ẩn loading khi HTML đã load
+                pdfViewer.onload = () => {
+                    clearTimeout(loadTimeout);
+                    modalLoading.style.display = 'none';
+                    pdfViewer.style.display = 'block';
+                };
+                
+                pdfViewer.onerror = () => {
+                    clearTimeout(loadTimeout);
+                    modalLoading.style.display = 'flex';
+                    modalLoading.innerHTML = '❌ Không thể tải file preview. Vui lòng thử lại hoặc tải file về máy.';
+                    pdfViewer.style.display = 'none';
+                };
+            } catch (error) {
+                modalLoading.innerHTML = `❌ Lỗi khi tải file preview: ${error.message}`;
+            }
+        });
+
+        // Đóng modal khi click nút X hoặc click ra ngoài
+        closeModal.addEventListener('click', () => {
+            previewModal.classList.remove('active');
+            pdfViewer.src = '';
+        });
+
+        previewModal.addEventListener('click', (e) => {
+            if (e.target === previewModal) {
+                previewModal.classList.remove('active');
+                pdfViewer.src = '';
+            }
+        });
+
+        // Đóng modal bằng phím ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && previewModal.classList.contains('active')) {
+                previewModal.classList.remove('active');
+                pdfViewer.src = '';
+            }
+        });
+
+        downloadBtn.addEventListener('click', async () => {
+            if (!currentPreviewData) return;
+            
+            try {
+                const downloadUrl = `${API_BASE}${currentPreviewData.download_url}?filename=${encodeURIComponent(currentPreviewData.filename)}`;
+                const response = await fetch(downloadUrl);
+                
+                if (!response.ok) {
+                    throw new Error('Không thể tải file');
+                }
+                
+                await downloadBlob(response, 'bao-cao-chuan');
+                formatStatus.textContent = '✅ Đã tải file về máy!';
+            } catch (error) {
+                formatStatus.textContent = `❌ ${error.message}`;
             }
         });
     </script>
