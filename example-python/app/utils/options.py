@@ -8,6 +8,7 @@ DEFAULT_OPTIONS = {
     "clean_whitespace": True,
     "normalize_font": True,
     "heading_detection": True,
+    "auto_numbered_heading": True,  # Tự động đánh tiêu đề dựa trên số thứ tự (1., 1.1., 1.1.1., ...)
     "adjust_margins": True,
     "indent_spacing": True,
     "format_tables": True,

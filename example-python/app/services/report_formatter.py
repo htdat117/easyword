@@ -4,10 +4,11 @@ from io import BytesIO
 from html import escape
 
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK, WD_TAB_ALIGNMENT, WD_TAB_LEADER
+from docx.enum.style import WD_STYLE_TYPE # [MỚI] Quan trọng để tạo Style
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Pt, RGBColor
+from docx.shared import Pt, RGBColor, Cm # [MỚI] Dùng Cm để canh tab
 from docx.text.paragraph import Paragraph
 
 from app.config import (
@@ -87,6 +88,37 @@ def _looks_like_heading(text):
     return text.isupper()
 
 
+def _detect_numbered_heading(text):
+    """
+    Phát hiện tiêu đề dựa trên số thứ tự.
+    Ví dụ:
+    - "1. Khái niệm" → (1, True)  # Heading 1
+    - "1.1. Định nghĩa" → (2, True)  # Heading 2
+    - "1.1.1. Chi tiết" → (3, True)  # Heading 3
+    - "1.1.1.1. Mục nhỏ" → (4, True)  # Heading 4
+    
+    Returns: (level, is_heading) hoặc (None, False)
+    """
+    text = text.strip()
+    if not text:
+        return None, False
+    
+    # Pattern: bắt đầu bằng số, có thể có nhiều số cách nhau bởi dấu chấm
+    # Ví dụ: "1. ", "1.1. ", "1.1.1. ", "1.1.1.1. "
+    pattern = r'^(\d+(?:\.\d+)*)\.\s+(.+)$'
+    match = re.match(pattern, text)
+    
+    if match:
+        number_part = match.group(1)  # "1", "1.1", "1.1.1", etc.
+        # Đếm số lượng số trong pattern (số chấm + 1)
+        level = number_part.count('.') + 1
+        # Giới hạn level từ 1 đến 6 (Word chỉ hỗ trợ Heading 1-6)
+        level = min(max(level, 1), 6)
+        return level, True
+    
+    return None, False
+
+
 def _document_has_toc(doc):
     for paragraph in doc.paragraphs:
         for run in paragraph.runs:
@@ -121,30 +153,108 @@ def _insert_paragraph_after(paragraph, text=""):
         return paragraph
 
 
+def _add_section_break(paragraph):
+    """
+    Thêm section break (next page) vào paragraph.
+    Section break cho phép tách mục lục và nội dung, 
+    và đánh số trang độc lập cho từng section.
+    """
+    try:
+        p_pr = paragraph._p.get_or_add_pPr()
+        
+        # Xóa sectPr cũ nếu có (để tránh conflict)
+        old_sect_pr = p_pr.find(qn("w:sectPr"))
+        if old_sect_pr is not None:
+            p_pr.remove(old_sect_pr)
+        
+        # Tạo sectPr element mới cho section break
+        sect_pr = OxmlElement("w:sectPr")
+        # Type "nextPage" tạo section break và bắt đầu trang mới
+        sect_pr.set(qn("w:type"), "nextPage")
+        
+        # Copy các thuộc tính từ section hiện tại (margins, header, footer, etc.)
+        current_section = paragraph._parent.sections[-1] if paragraph._parent.sections else None
+        if current_section:
+            try:
+                # Copy margins
+                sect_pr_margins = current_section._sectPr.find(qn("w:pgMar"))
+                if sect_pr_margins is not None:
+                    # Tạo lại margins element
+                    new_margins = OxmlElement("w:pgMar")
+                    for attr in ["top", "right", "bottom", "left", "header", "footer", "gutter"]:
+                        val = sect_pr_margins.get(qn(f"w:{attr}"))
+                        if val is not None:
+                            new_margins.set(qn(f"w:{attr}"), val)
+                    sect_pr.append(new_margins)
+            except Exception:
+                pass
+        
+        p_pr.append(sect_pr)
+    except Exception as e:
+        logging.warning(f"Không thể thêm section break: {e}")
+
+
 def _copy_heading_style_to_toc(doc):
     """
     Định dạng lại các style TOC để:
-    - Font: Times New Roman
-    - Cỡ chữ: 13pt
-    - Không thụt lề trái (0cm)
+    - Font: Times New Roman, 13pt
+    - Indent: 0cm tuyệt đối (xử lý cả XML để tránh Word override)
+    - Tab stops: Thiết lập tab phải ở 16cm để số trang thẳng hàng
     """
-    for depth in range(1, 10):  # Xử lý TOC 1 đến TOC 9
+    # Xử lý từ TOC 1 đến TOC 9
+    for depth in range(1, 10):
         style_name = f"TOC {depth}"
+        
+        # [QUAN TRỌNG] Tạo Style nếu chưa tồn tại
         try:
             style = doc.styles[style_name]
         except KeyError:
-            continue
+            try:
+                # Tạo style mới dạng Paragraph
+                style = doc.styles.add_style(style_name, WD_STYLE_TYPE.PARAGRAPH)
+                # Đặt base style là Normal để tránh kế thừa linh tinh
+                style.base_style = doc.styles['Normal']
+                style.hidden = False
+                style.quick_style = True # Hiển thị trên thanh công cụ để dễ debug
+            except Exception:
+                continue
 
-        # Xử lý Paragraph Format (pPr) - Indent
+        # --- 1. Xử lý Indent và Spacing qua API (Cách chính thống) ---
+        try:
+            fmt = style.paragraph_format
+            
+            # Reset toàn bộ thụt lề về 0
+            fmt.left_indent = Pt(0)
+            fmt.right_indent = Pt(0)
+            fmt.first_line_indent = Pt(0)
+            
+            # Spacing
+            fmt.space_before = Pt(0)
+            fmt.space_after = Pt(6)
+            fmt.line_spacing = 1.5
+            fmt.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            
+            # [QUAN TRỌNG] Xóa Tab cũ và đặt Tab mới cho số trang
+            # Word mặc định dùng tab hanging indent, ta cần xóa nó đi
+            fmt.tab_stops.clear_all()
+            # Thêm tab phải (Right align) tại vị trí ~16cm (gần lề phải trang A4)
+            # Kèm theo leader dots (......)
+            fmt.tab_stops.add_tab_stop(Cm(16), WD_TAB_ALIGNMENT.RIGHT, WD_TAB_LEADER.DOTS)
+            
+        except Exception as e:
+            logging.warning(f"Lỗi API format {style_name}: {e}")
+
+        # --- 2. Xử lý Can thiệp sâu vào XML (Cách mạnh tay) ---
+        # Đây là bước chặn việc Word tự hồi phục định dạng mặc định (0.92cm)
         try:
             p_pr = style._element.get_or_add_pPr()
             
-            # Xóa tất cả các element indent cũ
+            # Xóa các thẻ indent cũ nếu còn sót
             for child in list(p_pr):
-                if child.tag.endswith("}ind") or child.tag.endswith("ind"):
+                if child.tag.endswith("ind") or child.tag.endswith("tabs"):
                     p_pr.remove(child)
             
-            # Tạo lại indent element với giá trị 0 (twips: 0 = 0cm)
+            # Ép thẻ Indent XML về 0
             ind_elem = OxmlElement("w:ind")
             ind_elem.set(qn("w:left"), "0")
             ind_elem.set(qn("w:right"), "0")
@@ -152,81 +262,62 @@ def _copy_heading_style_to_toc(doc):
             ind_elem.set(qn("w:hanging"), "0")
             p_pr.append(ind_elem)
             
-            # Đặt alignment về Left
-            jc_elem = p_pr.find(qn("w:jc"))
-            if jc_elem is not None:
-                p_pr.remove(jc_elem)
-            jc_elem = OxmlElement("w:jc")
-            jc_elem.set(qn("w:val"), "left")
-            p_pr.append(jc_elem)
-        except Exception as e:
-            logging.warning(f"Không thể xử lý paragraph format cho {style_name}: {e}")
+            # (Tab stop đã được set ở trên qua API, thường là đủ, không cần set lại bằng XML ở đây trừ khi lỗi)
 
-        # Xử lý Run Format (rPr) - Font
+        except Exception as e:
+            logging.warning(f"Lỗi XML format {style_name}: {e}")
+
+        # --- 3. Xử lý Font chữ ---
         try:
-            # Lấy hoặc tạo rPr element
             r_pr = style._element.get_or_add_rPr()
             
-            # Xóa font element cũ nếu có
-            r_fonts_old = r_pr.find(qn("w:rFonts"))
-            if r_fonts_old is not None:
-                r_pr.remove(r_fonts_old)
+            # Xóa font cũ
+            for tag in ["rFonts", "sz", "szCs", "b", "i"]:
+                old = r_pr.find(qn(f"w:{tag}"))
+                if old is not None:
+                    r_pr.remove(old)
             
-            # Tạo lại rFonts với Times New Roman cho tất cả các loại font
+            # Set Font Times New Roman
             r_fonts = OxmlElement("w:rFonts")
-            r_fonts.set(qn("w:ascii"), STANDARD_FONT)      # Font cho ASCII
-            r_fonts.set(qn("w:hAnsi"), STANDARD_FONT)      # Font cho H-ANSI
-            r_fonts.set(qn("w:eastAsia"), STANDARD_FONT)   # Font cho East Asia (Tiếng Việt)
-            r_fonts.set(qn("w:cs"), STANDARD_FONT)         # Font cho Complex Scripts
+            r_fonts.set(qn("w:ascii"), STANDARD_FONT)
+            r_fonts.set(qn("w:hAnsi"), STANDARD_FONT)
+            r_fonts.set(qn("w:eastAsia"), STANDARD_FONT)
+            r_fonts.set(qn("w:cs"), STANDARD_FONT)
             r_pr.append(r_fonts)
             
-            # Xóa size element cũ nếu có
-            sz_old = r_pr.find(qn("w:sz"))
-            if sz_old is not None:
-                r_pr.remove(sz_old)
-            sz_old = r_pr.find(qn("w:szCs"))
-            if sz_old is not None:
-                r_pr.remove(sz_old)
+            # Set Size 13pt (26 half-points)
+            sz = OxmlElement("w:sz")
+            sz.set(qn("w:val"), "26")
+            r_pr.append(sz)
             
-            # Tạo lại size element (font size tính bằng half-points: 13pt = 26 half-points)
-            sz_elem = OxmlElement("w:sz")
-            sz_elem.set(qn("w:val"), "26")  # 13pt = 26 half-points
-            r_pr.append(sz_elem)
-            
-            sz_cs_elem = OxmlElement("w:szCs")
-            sz_cs_elem.set(qn("w:val"), "26")  # 13pt = 26 half-points
-            r_pr.append(sz_cs_elem)
+            sz_cs = OxmlElement("w:szCs")
+            sz_cs.set(qn("w:val"), "26")
+            r_pr.append(sz_cs)
             
         except Exception as e:
-            logging.warning(f"Không thể xử lý font cho {style_name}: {e}")
-        
-        # Cũng thiết lập qua API của python-docx để đảm bảo
-        try:
-            fmt = style.paragraph_format
-            fmt.left_indent = Pt(0)
-            fmt.first_line_indent = Pt(0)
-            fmt.right_indent = Pt(0)
-            fmt.alignment = WD_ALIGN_PARAGRAPH.LEFT
-            
-            font = style.font
-            font.name = STANDARD_FONT
-            font.size = TOC_FONT_SIZE
-        except Exception as e:
-            logging.warning(f"Không thể thiết lập style qua API cho {style_name}: {e}")
+            logging.warning(f"Lỗi Font format {style_name}: {e}")
 
 
 def _insert_table_of_contents(doc, options, anchor=None):
     if not options.get("insert_toc", True):
         return
     if _document_has_toc(doc):
+        # Nếu đã có TOC, vẫn cần apply lại style để sửa lỗi thụt lề
+        _copy_heading_style_to_toc(doc)
         return
 
+    # Định nghĩa Style trước khi chèn
     _copy_heading_style_to_toc(doc)
 
-    target = anchor or _find_toc_anchor(doc)
-    if target is not None:
-        toc_heading = target.insert_paragraph_before("MỤC LỤC")
+    # Luôn chèn mục lục ở đầu document (trang đầu tiên)
+    # Tìm paragraph đầu tiên của document để chèn trước nó
+    first_paragraph = doc.paragraphs[0] if doc.paragraphs else None
+    
+    if first_paragraph is not None:
+        # Chèn mục lục trước paragraph đầu tiên
+        toc_heading = first_paragraph.insert_paragraph_before("MỤC LỤC")
     else:
+        # Nếu document rỗng, thêm paragraph mới
         toc_heading = doc.add_paragraph("MỤC LỤC")
 
     toc_heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -234,17 +325,22 @@ def _insert_table_of_contents(doc, options, anchor=None):
     for run in toc_heading.runs:
         _set_run_format(run, HEADING_FONT_SIZE, bold=True)
 
+    # Chèn Field TOC
     toc_body = _insert_paragraph_after(toc_heading)
-    # Đảm bảo paragraph chứa TOC field không có indent
+    
+    # Đặt format cho chính đoạn chứa field (đề phòng)
     fmt_body = toc_body.paragraph_format
     fmt_body.left_indent = Pt(0)
     fmt_body.first_line_indent = Pt(0)
     fmt_body.right_indent = Pt(0)
     fmt_body.space_after = Pt(6)
+    fmt_body.tab_stops.clear_all()
+    fmt_body.tab_stops.add_tab_stop(Cm(16), WD_TAB_ALIGNMENT.RIGHT, WD_TAB_LEADER.DOTS)
     
-    # Đảm bảo style TOC được thiết lập lại một lần nữa sau khi đã có paragraph
+    # Gọi lại hàm định nghĩa Style để chắc chắn nó được ghi đè cuối cùng
     _copy_heading_style_to_toc(doc)
     
+    # Mã Field TOC: \h (hyperlink), \z (ẩn số trang nếu thiếu), \u (dùng outline level)
     fld = OxmlElement("w:fldSimple")
     fld.set(qn("w:instr"), 'TOC \\o "1-3" \\h \\z \\u')
     toc_body.add_run()._r.append(fld)
@@ -257,8 +353,13 @@ def _insert_table_of_contents(doc, options, anchor=None):
     for run in hint.runs:
         _set_run_format(run, Pt(11), italic=True, color=RGBColor(200, 0, 0))
 
+    # Tạo page break và section break sau mục lục
     page_break_para = _insert_paragraph_after(hint)
     page_break_para.add_run().add_break(WD_BREAK.PAGE)
+    
+    # Thêm section break (next page) để tách mục lục và nội dung
+    # Section break cho phép đánh số trang độc lập
+    _add_section_break(page_break_para)
 
 
 def _apply_page_numbers(doc, options):
@@ -266,7 +367,11 @@ def _apply_page_numbers(doc, options):
         return
 
     try:
-        footer_style = doc.styles["Footer"]
+        if "Footer" in doc.styles:
+            footer_style = doc.styles["Footer"]
+        else:
+            footer_style = doc.styles["Normal"]
+            
         footer_style.font.name = STANDARD_FONT
         footer_style.font.size = PAGE_NUMBER_FONT_SIZE
     except KeyError:
@@ -276,16 +381,24 @@ def _apply_page_numbers(doc, options):
     if options.get("page_number_style") == "roman":
         instr = "PAGE \\* ROMAN"
 
-    for section in doc.sections:
+    sections = list(doc.sections)
+    has_toc = _document_has_toc(doc) or (options.get("insert_toc", True) and len(sections) > 1)
+    
+    for idx, section in enumerate(sections):
         footer = section.footer
-        # Xóa hết các old paragraphs nếu có và làm mới (tránh lỗi style cũ)
         while footer.paragraphs:
             p = footer.paragraphs[0]
             _remove_paragraph(p)
+        
+        # Nếu có TOC và đây là section đầu tiên (mục lục) - không đánh số trang
+        if has_toc and idx == 0:
+            # Để trống footer cho section đầu tiên (mục lục)
+            continue
+        
+        # Các section khác (nội dung) - đánh số trang
         para = footer.add_paragraph()
         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-        # Đảm bảo paragraph này luôn đúng style
         para.style.font.name = STANDARD_FONT
         para.style.font.size = PAGE_NUMBER_FONT_SIZE
 
@@ -296,14 +409,28 @@ def _apply_page_numbers(doc, options):
         _set_run_format(run, PAGE_NUMBER_FONT_SIZE, bold=False)
         run.font.name = STANDARD_FONT
         run.font.size = PAGE_NUMBER_FONT_SIZE
-
-        # Ép lại mọi run trong đoạn này (dù thực tế chỉ một)
+        
         for r in para.runs:
-            try:
+             try:
                 r.font.name = STANDARD_FONT
                 r.font.size = PAGE_NUMBER_FONT_SIZE
-            except Exception:
+             except Exception:
                 pass
+        
+        # Điều chỉnh page numbering: section đầu tiên có nội dung bắt đầu từ 1
+        # (Nếu có TOC thì là section thứ 2, nếu không có TOC thì là section đầu tiên)
+        target_section_idx = 1 if has_toc else 0
+        if idx == target_section_idx:
+            try:
+                sect_pr = section._sectPr
+                pg_num_type = sect_pr.find(qn("w:pgNumType"))
+                if pg_num_type is None:
+                    pg_num_type = OxmlElement("w:pgNumType")
+                    sect_pr.append(pg_num_type)
+                # Bắt đầu đánh số từ 1
+                pg_num_type.set(qn("w:start"), "1")
+            except Exception as e:
+                logging.warning(f"Không thể đặt page numbering: {e}")
 
 
 def _standardize_paragraph(paragraph, options):
@@ -319,12 +446,34 @@ def _standardize_paragraph(paragraph, options):
         return
 
     is_heading = False
+    heading_level = None
     style_name = paragraph.style.name if paragraph.style else ""
+    
     if options.get("heading_detection", True):
+        # Kiểm tra nếu đã có style heading (giữ nguyên nếu đã được set thủ công)
         if style_name.lower().startswith("heading"):
             is_heading = True
+            # Lấy level từ style name (ví dụ: "Heading 1" → level 1)
+            try:
+                level_str = style_name.split()[-1]
+                if level_str.isdigit():
+                    heading_level = int(level_str)
+            except Exception:
+                heading_level = 1
+        # Kiểm tra pattern số thứ tự (nếu chưa có style heading)
+        elif options.get("auto_numbered_heading", True):
+            detected_level, detected_heading = _detect_numbered_heading(normalized)
+            if detected_heading:
+                is_heading = True
+                heading_level = detected_level
+                try:
+                    paragraph.style = f"Heading {heading_level}"
+                except Exception:
+                    pass
+        # Kiểm tra heading theo pattern chữ hoa (fallback)
         elif _looks_like_heading(normalized):
             is_heading = True
+            heading_level = 1
             try:
                 paragraph.style = "Heading 1"
             except Exception:
@@ -333,7 +482,12 @@ def _standardize_paragraph(paragraph, options):
     if options.get("normalize_font", True):
         target_size = HEADING_FONT_SIZE if is_heading else BODY_FONT_SIZE
         for run in paragraph.runs:
-            bold_flag = is_heading or bool(run.font.bold)
+            # Chỉ Heading 1 mới bôi đậm, các heading khác (2, 3, 4...) để bình thường
+            if is_heading:
+                bold_flag = (heading_level == 1) if heading_level is not None else False
+            else:
+                # Không phải heading: giữ nguyên bold hiện tại
+                bold_flag = bool(run.font.bold)
             italic_flag = bool(run.font.italic)
             _set_run_format(run, target_size, bold=bold_flag, italic=italic_flag)
 
@@ -341,9 +495,11 @@ def _standardize_paragraph(paragraph, options):
         fmt = paragraph.paragraph_format
         if is_heading:
             fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-            fmt.space_before = Pt(12)
-            fmt.space_after = Pt(12)
+            fmt.space_before = Pt(0)  # Before: 0
+            fmt.space_after = Pt(6)   # After: 6
             fmt.first_line_indent = Pt(0)
+            # Line spacing: 1.5 line
+            fmt.line_spacing = 1.5
         else:
             fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
             fmt.first_line_indent = PARAGRAPH_INDENT
@@ -365,8 +521,6 @@ def apply_standard_formatting(doc: Document, options=None):
         except Exception:
             logging.warning("Không thể áp dụng lề cho tài liệu.")
 
-    # Định dạng TOC styles TRƯỚC khi xử lý paragraphs để đảm bảo style đúng
-    # (kể cả khi document đã có TOC sẵn)
     _copy_heading_style_to_toc(doc)
 
     for paragraph in list(doc.paragraphs):
@@ -379,9 +533,10 @@ def apply_standard_formatting(doc: Document, options=None):
                     for paragraph in list(cell.paragraphs):
                         _standardize_paragraph(paragraph, options)
 
-    _insert_table_of_contents(doc, options, anchor=_find_toc_anchor(doc))
+    # Chèn mục lục ở đầu document (không cần anchor)
+    _insert_table_of_contents(doc, options, anchor=None)
     
-    # Định dạng lại TOC styles SAU KHI chèn TOC để đảm bảo override mọi style mặc định
+    # Apply lại lần cuối sau khi chèn TOC
     _copy_heading_style_to_toc(doc)
     
     _apply_page_numbers(doc, options)
@@ -482,7 +637,6 @@ def format_uploaded_stream(file_bytes, filename, options_payload):
 
 
 def docx_to_html(doc: Document) -> str:
-    """Convert Word document sang HTML để preview"""
     html_parts = ['<div class="docx-preview" style="font-family: \'Times New Roman\', serif; max-width: 210mm; margin: 0 auto; padding: 20mm 35mm 20mm 25mm; background: white; line-height: 1.3;">']
     
     for paragraph in doc.paragraphs:
@@ -493,7 +647,6 @@ def docx_to_html(doc: Document) -> str:
         style_name = paragraph.style.name if paragraph.style else ""
         is_heading = style_name.lower().startswith("heading") if style_name else False
         
-        # Xác định tag và style
         if is_heading:
             level = 1
             if "heading" in style_name.lower():
@@ -506,7 +659,6 @@ def docx_to_html(doc: Document) -> str:
         else:
             tag = "p"
         
-        # Xác định alignment
         alignment_map = {
             WD_ALIGN_PARAGRAPH.CENTER: "center",
             WD_ALIGN_PARAGRAPH.RIGHT: "right",
@@ -515,7 +667,6 @@ def docx_to_html(doc: Document) -> str:
         }
         align = alignment_map.get(paragraph.alignment, "left")
         
-        # Xây dựng style
         para_style = f"text-align: {align};"
         if is_heading:
             para_style += " font-weight: bold; margin: 12pt 0;"
@@ -526,7 +677,6 @@ def docx_to_html(doc: Document) -> str:
         else:
             para_style += " font-size: 13pt; text-indent: 1cm; margin: 6pt 0;"
         
-        # Xử lý runs (text formatting)
         html_parts.append(f'<{tag} style="{para_style}">')
         
         if paragraph.runs:
@@ -552,7 +702,6 @@ def docx_to_html(doc: Document) -> str:
         
         html_parts.append(f'</{tag}>')
     
-    # Xử lý tables
     for table in doc.tables:
         html_parts.append('<table style="width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: 13pt;">')
         for row in table.rows:
@@ -565,7 +714,6 @@ def docx_to_html(doc: Document) -> str:
     
     html_parts.append('</div>')
     
-    # Wrap trong HTML đầy đủ với CSS
     full_html = f"""<!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -605,10 +753,8 @@ def docx_to_html(doc: Document) -> str:
 
 
 def docx_to_html_stream(doc: Document) -> BytesIO:
-    """Convert Word document sang HTML stream"""
     html_content = docx_to_html(doc)
     html_bytes = html_content.encode('utf-8')
     stream = BytesIO(html_bytes)
     stream.seek(0)
     return stream
-
