@@ -493,21 +493,42 @@ def _standardize_paragraph(paragraph, options):
 
     if options.get("indent_spacing", True):
         fmt = paragraph.paragraph_format
+        # Lấy text sạch để kiểm tra điều kiện gạch đầu dòng và độ dài
+        clean_text = paragraph.text.strip()
+
         if is_heading:
             fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
             fmt.space_before = Pt(0)  # Before: 0
             fmt.space_after = Pt(6)   # After: 6
             fmt.first_line_indent = Pt(0)
+            fmt.left_indent = Pt(0)
             # Line spacing: 1.5 line
             fmt.line_spacing = 1.5
         else:
+            # --- Cấu hình chung cho phần thân bài ---
             fmt.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-            fmt.first_line_indent = PARAGRAPH_INDENT
             fmt.line_spacing = options.get("line_spacing", 1.3)
             fmt.space_before = Pt(0)
             fmt.space_after = Pt(6)
 
-
+            # --- Logic xử lý thụt đầu dòng (First Line Indent) ---
+            
+            # 1. Nếu bắt đầu bằng gạch đầu dòng, dấu cộng, dấu sao hoặc chấm tròn
+            if clean_text.startswith(("-", "+", "•", "*")):
+                fmt.first_line_indent = Pt(0)
+                fmt.left_indent = Pt(0) # Đảm bảo sát lề trái
+            
+            # 2. Nếu đoạn văn ngắn (dưới 50 ký tự) -> Coi là 1 dòng -> Không thụt đầu dòng
+            # (Giả định đây là tiêu đề phụ hoặc chú thích ngắn)
+            elif 0 < len(clean_text) < 50:
+                fmt.first_line_indent = Pt(0)
+                fmt.left_indent = Pt(0)
+                
+            # 3. Các trường hợp còn lại (Văn bản bình thường) -> Thụt đầu dòng
+            else:
+                fmt.first_line_indent = PARAGRAPH_INDENT
+                fmt.left_indent = Pt(0)
+                
 def apply_standard_formatting(doc: Document, options=None):
     options = merge_options(options)
 
