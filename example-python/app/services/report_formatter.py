@@ -31,31 +31,19 @@ from app.config import (
     UEL_MARGINS,
 )
 from app.utils.options import merge_options
-
-
-def _ensure_east_asia_font(run):
-    try:
-        r_pr = run._element.get_or_add_rPr()
-        r_fonts = r_pr.rFonts
-        if r_fonts is None:
-            r_fonts = OxmlElement("w:rFonts")
-            r_pr.append(r_fonts)
-        r_fonts.set(qn("w:eastAsia"), STANDARD_FONT)
-    except Exception:
-        pass
-
-
-def _set_run_format(run, size, bold=False, color=None, italic=False):
-    try:
-        run.font.name = STANDARD_FONT
-        run.font.size = size
-        run.font.bold = bold
-        run.font.italic = italic
-        if color:
-            run.font.color.rgb = color
-        _ensure_east_asia_font(run)
-    except Exception:
-        pass
+from app.services.docx_styles import (
+    _copy_heading_style_to_toc,
+    _ensure_caption_style,
+    _ensure_east_asia_font,
+    _format_toc_paragraphs,
+    _set_run_format,
+)
+from app.services.docx_fields import (
+    _add_page_number_field,
+    _add_page_number_field_complex,
+    _add_page_number_field_simple,
+    format_page_number_run,
+)
 
 
 def _paragraph_has_image(paragraph):
@@ -218,147 +206,6 @@ def _add_section_break(paragraph):
         logging.warning(f"Không thể thêm section break: {e}")
 
 # =========================================================================
-# HÀM XỬ LÝ STYLE RIÊNG CHO HÌNH ẢNH (UEL Figure)
-# =========================================================================
-def _ensure_caption_style(doc):
-    style_name = "UEL Figure"
-    try:
-        # Xóa style cũ nếu có để tạo mới hoàn toàn
-        try:
-            doc.styles[style_name].delete()
-        except (KeyError, AttributeError):
-            pass
-        
-        style = doc.styles.add_style(style_name, WD_STYLE_TYPE.PARAGRAPH)
-        # KHÔNG base on Normal để tránh inherit Cambria
-        style.base_style = None
-        style.hidden = False
-        style.quick_style = True
-    except Exception:
-        style = doc.styles[style_name]
-    
-    # Format paragraph
-    p_fmt = style.paragraph_format
-    p_fmt.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_fmt.space_before = Pt(6)
-    p_fmt.space_after = Pt(12)
-    p_fmt.first_line_indent = Pt(0)
-    p_fmt.left_indent = Pt(0)
-    p_fmt.right_indent = Pt(0)
-    p_fmt.line_spacing = 1.5
-    
-    # Format font qua API
-    font = style.font
-    font.name = STANDARD_FONT
-    font.size = TOC_FONT_SIZE  # 13pt
-    font.italic = True
-    font.bold = False
-    
-    # Force set font trong XML
-    try:
-        r_pr = style._element.get_or_add_rPr()
-        
-        # Xóa tất cả font properties cũ
-        for child in list(r_pr):
-            r_pr.remove(child)
-        
-        # Set font Times New Roman
-        r_fonts = OxmlElement("w:rFonts")
-        r_fonts.set(qn("w:ascii"), STANDARD_FONT)
-        r_fonts.set(qn("w:hAnsi"), STANDARD_FONT)
-        r_fonts.set(qn("w:eastAsia"), STANDARD_FONT)
-        r_fonts.set(qn("w:cs"), STANDARD_FONT)
-        r_pr.append(r_fonts)
-        
-        # Set size 13pt
-        sz_half_pts = int(TOC_FONT_SIZE.pt * 2)
-        sz = OxmlElement("w:sz")
-        sz.set(qn("w:val"), str(sz_half_pts))
-        r_pr.append(sz)
-        sz_cs = OxmlElement("w:szCs")
-        sz_cs.set(qn("w:val"), str(sz_half_pts))
-        r_pr.append(sz_cs)
-        
-        # Set italic
-        i_elem = OxmlElement("w:i")
-        i_elem.set(qn("w:val"), "1")
-        r_pr.append(i_elem)
-        
-        logging.info(f"Đã tạo style UEL Figure với font {STANDARD_FONT} {TOC_FONT_SIZE.pt}pt")
-    except Exception as e:
-        logging.warning(f"Lỗi khi set font cho UEL Figure style: {e}")
-
-def _copy_heading_style_to_toc(doc):
-    for depth in range(1, 10):
-        style_name = f"TOC {depth}"
-        try:
-            try:
-                doc.styles[style_name].delete()
-            except (KeyError, AttributeError):
-                pass
-            
-            style = doc.styles.add_style(style_name, WD_STYLE_TYPE.PARAGRAPH)
-            # KHÔNG base_style từ Normal để tránh inherit font Cambria
-            # style.base_style = doc.styles['Normal']
-            style.base_style = None
-            style.hidden = False
-            style.quick_style = True
-            
-            fmt = style.paragraph_format
-            fmt.left_indent = Pt(0)
-            fmt.right_indent = Pt(0)
-            fmt.first_line_indent = Pt(0)
-            fmt.space_before = Pt(0)
-            fmt.space_after = Pt(6)
-            fmt.line_spacing = 1.5
-            fmt.alignment = WD_ALIGN_PARAGRAPH.LEFT
-            fmt.tab_stops.clear_all()
-            fmt.tab_stops.add_tab_stop(Cm(16), WD_TAB_ALIGNMENT.RIGHT, WD_TAB_LEADER.DOTS)
-            
-            p_pr = style._element.get_or_add_pPr()
-            for child in list(p_pr):
-                if child.tag.endswith("ind") or child.tag.endswith("tabs"):
-                    p_pr.remove(child)
-            ind_elem = OxmlElement("w:ind")
-            ind_elem.set(qn("w:left"), "0")
-            ind_elem.set(qn("w:right"), "0")
-            ind_elem.set(qn("w:firstLine"), "0")
-            ind_elem.set(qn("w:hanging"), "0")
-            p_pr.append(ind_elem)
-            
-            style.font.name = STANDARD_FONT
-            style.font.size = TOC_FONT_SIZE
-            style.font.bold = False
-            style.font.italic = False
-            
-            r_pr = style._element.get_or_add_rPr()
-            for child in list(r_pr):
-                r_pr.remove(child)
-            
-            r_fonts = OxmlElement("w:rFonts")
-            r_fonts.set(qn("w:ascii"), STANDARD_FONT)
-            r_fonts.set(qn("w:hAnsi"), STANDARD_FONT)
-            r_fonts.set(qn("w:eastAsia"), STANDARD_FONT)
-            r_fonts.set(qn("w:cs"), STANDARD_FONT)
-            r_pr.append(r_fonts)
-            
-            toc_size_half_pts = int(TOC_FONT_SIZE.pt * 2)
-            sz = OxmlElement("w:sz")
-            sz.set(qn("w:val"), str(toc_size_half_pts))
-            r_pr.append(sz)
-            sz_cs = OxmlElement("w:szCs")
-            sz_cs.set(qn("w:val"), str(toc_size_half_pts))
-            r_pr.append(sz_cs)
-            
-            b_elem = OxmlElement("w:b")
-            b_elem.set(qn("w:val"), "0")
-            r_pr.append(b_elem)
-            
-        except Exception as e:
-            logging.warning(f"Lỗi tạo/style TOC {style_name}: {e}")
-            continue
-
-# =========================================================================
 # HÀM XỬ LÝ NHẬN DIỆN VÀ ĐÁNH SỐ CAPTION AN TOÀN
 # =========================================================================
 def _force_caption_font(run):
@@ -431,105 +278,125 @@ def _process_captions(doc):
         logging.info(f"Đã xử lý {figure_count} captions với font {STANDARD_FONT} {TOC_FONT_SIZE.pt}pt")
 
 # =========================================================================
-# HÀM FORMAT LẠI TẤT CẢ CÁC PARAGRAPH TOC
+# HÀM CHÈN TOC (MỤC LỤC) VÀ TOF (DANH MỤC HÌNH) - THỦ CÔNG
 # =========================================================================
-def _format_toc_paragraphs(doc):
+def _collect_headings(doc):
     """
-    Format lại tất cả các paragraph TOC để đảm bảo font Times New Roman 13pt
-    FORCE OVERRIDE mọi font setting từ Normal style
+    Thu thập tất cả headings trong document để tạo TOC thủ công
+    Returns: list of (text, level, page_estimate)
     """
-    toc_count = 0
+    headings = []
+    page_estimate = 1
+    lines_per_page = 35  # Ước tính số dòng mỗi trang
+    line_count = 0
+    
     for paragraph in doc.paragraphs:
         style_name = paragraph.style.name if paragraph.style else ""
         text = paragraph.text.strip()
         
-        # Kiểm tra xem có phải paragraph TOC không
-        if style_name.startswith("TOC") or "MỤC LỤC" in text or "DANH MỤC" in text:
-            toc_count += 1
+        if not text:
+            line_count += 1
+            continue
             
-            # Format paragraph
+        # Kiểm tra nếu là heading
+        if style_name.lower().startswith("heading"):
             try:
-                fmt = paragraph.paragraph_format
-                if style_name.startswith("TOC"):
-                    fmt.line_spacing = 1.5
-                    fmt.space_before = Pt(0)
-                    fmt.space_after = Pt(6)
-            except Exception:
-                pass
-            
-            # Format tất cả runs trong paragraph
-            for run in paragraph.runs:
-                try:
-                    # Force set font trong XML TRƯỚC - QUAN TRỌNG!
-                    r_pr = run._element.get_or_add_rPr()
-                    
-                    # XÓA HOÀN TOÀN tất cả font properties cũ
-                    for child in list(r_pr):
-                        tag_name = child.tag.split('}')[-1] if '}' in child.tag else child.tag
-                        if tag_name in ["rFonts", "sz", "szCs", "rStyle"]:
-                            r_pr.remove(child)
-                    
-                    # Set font Times New Roman - FORCE OVERRIDE
-                    r_fonts = OxmlElement("w:rFonts")
-                    r_fonts.set(qn("w:ascii"), STANDARD_FONT)
-                    r_fonts.set(qn("w:hAnsi"), STANDARD_FONT)
-                    r_fonts.set(qn("w:eastAsia"), STANDARD_FONT)
-                    r_fonts.set(qn("w:cs"), STANDARD_FONT)
-                    r_pr.insert(0, r_fonts)  # Insert ở đầu để đảm bảo priority
-                    
-                    # Set size 13pt
-                    toc_size_half_pts = int(TOC_FONT_SIZE.pt * 2)
-                    sz = OxmlElement("w:sz")
-                    sz.set(qn("w:val"), str(toc_size_half_pts))
-                    r_pr.append(sz)
-                    sz_cs = OxmlElement("w:szCs")
-                    sz_cs.set(qn("w:val"), str(toc_size_half_pts))
-                    r_pr.append(sz_cs)
-                    
-                    # Set qua API sau (để đồng bộ)
-                    run.font.name = STANDARD_FONT
-                    run.font.size = TOC_FONT_SIZE
-                    run.font.bold = False if style_name.startswith("TOC") else run.font.bold
-                    _ensure_east_asia_font(run)
-                    
-                except Exception as e:
-                    logging.warning(f"Lỗi format run trong TOC paragraph: {e}")
+                level = int(style_name.split()[-1]) if style_name.split()[-1].isdigit() else 1
+            except:
+                level = 1
+            level = min(max(level, 1), 6)
+            headings.append((text, level, page_estimate))
+        
+        # Ước tính số trang
+        line_count += max(1, len(text) // 80 + 1)
+        if line_count >= lines_per_page:
+            page_estimate += 1
+            line_count = 0
     
-    if toc_count > 0:
-        logging.info(f"Đã FORCE format {toc_count} paragraphs TOC với Times New Roman 13pt")
+    return headings
 
-# =========================================================================
-# HÀM CHÈN TOC (MỤC LỤC) VÀ TOF (DANH MỤC HÌNH)
-# =========================================================================
-def _insert_table_of_contents(doc, options, anchor=None):
-    if not options.get("insert_toc", True):
-        return
-    _copy_heading_style_to_toc(doc)
-    _ensure_caption_style(doc) 
+
+def _collect_figures(doc):
+    """
+    Thu thập tất cả captions hình ảnh trong document
+    Returns: list of (text, page_estimate)
+    """
+    figures = []
+    page_estimate = 1
+    lines_per_page = 35
+    line_count = 0
     
-    first_paragraph = doc.paragraphs[0] if doc.paragraphs else None
-    if first_paragraph is not None:
-        toc_heading = first_paragraph.insert_paragraph_before("MỤC LỤC")
-    else:
-        toc_heading = doc.add_paragraph("MỤC LỤC")
+    pattern = re.compile(r'^(Hình|Sơ đồ|Bảng|Biểu đồ)\s*\d*[:\.]?\s*(.+)$', re.IGNORECASE)
     
-    toc_heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    toc_heading.paragraph_format.space_after = Pt(6)
-    for run in toc_heading.runs:
-        _set_run_format(run, TOC_FONT_SIZE, bold=True)
+    for paragraph in doc.paragraphs:
+        style_name = paragraph.style.name if paragraph.style else ""
+        text = paragraph.text.strip()
+        
+        if not text:
+            line_count += 1
+            continue
+        
+        # Kiểm tra nếu là caption hình ảnh
+        if style_name in ["UEL Figure", "Caption"] or pattern.match(text):
+            figures.append((text, page_estimate))
+        
+        # Ước tính số trang
+        line_count += max(1, len(text) // 80 + 1)
+        if line_count >= lines_per_page:
+            page_estimate += 1
+            line_count = 0
     
-    toc_body = _insert_paragraph_after(toc_heading)
-    fmt_body = toc_body.paragraph_format
-    fmt_body.tab_stops.clear_all()
-    fmt_body.tab_stops.add_tab_stop(Cm(16), WD_TAB_ALIGNMENT.RIGHT, WD_TAB_LEADER.DOTS)
-    fmt_body.line_spacing = 1.5
-    fmt_body.space_before = Pt(0)
-    fmt_body.space_after = Pt(0)
+    return figures
+
+
+def _create_toc_entry(doc, text, level, page_num, after_para):
+    """
+    Tạo một entry trong mục lục với format cố định Times New Roman 13pt
+    """
+    # Tạo paragraph mới sau after_para
+    entry_para = _insert_paragraph_after(after_para)
     
-    # Tạo run với format font trước khi chèn field
-    run = toc_body.add_run()
+    # Set paragraph format
+    fmt = entry_para.paragraph_format
+    fmt.tab_stops.clear_all()
+    fmt.tab_stops.add_tab_stop(Cm(16), WD_TAB_ALIGNMENT.RIGHT, WD_TAB_LEADER.DOTS)
+    fmt.line_spacing = 1.5
+    fmt.space_before = Pt(0)
+    fmt.space_after = Pt(3)
     
-    # Force set font trong XML TRƯỚC khi chèn field
+    # Thụt lề theo level (level 1 = 0, level 2 = 0.5cm, level 3 = 1cm...)
+    indent = Cm((level - 1) * 0.5)
+    fmt.left_indent = indent
+    fmt.first_line_indent = Pt(0)
+    
+    # Tạo run cho text
+    run_text = entry_para.add_run(text)
+    run_text.font.name = STANDARD_FONT
+    run_text.font.size = TOC_FONT_SIZE
+    run_text.font.bold = (level == 1)  # Bold cho heading level 1
+    _ensure_east_asia_font(run_text)
+    _force_run_font_xml(run_text)
+    
+    # Tạo tab
+    run_tab = entry_para.add_run("\t")
+    run_tab.font.name = STANDARD_FONT
+    run_tab.font.size = TOC_FONT_SIZE
+    _ensure_east_asia_font(run_tab)
+    
+    # Tạo run cho số trang
+    run_page = entry_para.add_run(str(page_num))
+    run_page.font.name = STANDARD_FONT
+    run_page.font.size = TOC_FONT_SIZE
+    _ensure_east_asia_font(run_page)
+    _force_run_font_xml(run_page)
+    
+    return entry_para
+
+
+def _force_run_font_xml(run):
+    """
+    Force set font Times New Roman 13pt trong XML level
+    """
     r_pr = run._element.get_or_add_rPr()
     
     # Xóa font cũ
@@ -544,100 +411,124 @@ def _insert_table_of_contents(doc, options, anchor=None):
     r_fonts.set(qn("w:hAnsi"), STANDARD_FONT)
     r_fonts.set(qn("w:eastAsia"), STANDARD_FONT)
     r_fonts.set(qn("w:cs"), STANDARD_FONT)
-    r_pr.append(r_fonts)
+    r_pr.insert(0, r_fonts)
     
-    # Set size 13pt
-    toc_size_half_pts = int(TOC_FONT_SIZE.pt * 2)
+    # Set size 13pt (26 half-points)
+    size_half_pts = int(TOC_FONT_SIZE.pt * 2)
     sz = OxmlElement("w:sz")
-    sz.set(qn("w:val"), str(toc_size_half_pts))
+    sz.set(qn("w:val"), str(size_half_pts))
     r_pr.append(sz)
     sz_cs = OxmlElement("w:szCs")
-    sz_cs.set(qn("w:val"), str(toc_size_half_pts))
+    sz_cs.set(qn("w:val"), str(size_half_pts))
     r_pr.append(sz_cs)
+
+
+def _insert_table_of_contents(doc, options, anchor=None):
+    """
+    Chèn Mục lục và Danh mục hình ảnh THỦ CÔNG
+    Không dùng TOC field để đảm bảo font Times New Roman 13pt
+    """
+    if not options.get("insert_toc", True):
+        return
     
-    # Set qua API cũng
-    run.font.name = STANDARD_FONT
-    run.font.size = TOC_FONT_SIZE
-    _ensure_east_asia_font(run)
+    _copy_heading_style_to_toc(doc)
+    _ensure_caption_style(doc) 
     
-    logging.info(f"Đang tạo TOC với font = {STANDARD_FONT}, size = {TOC_FONT_SIZE.pt}pt")
+    # Thu thập headings và figures TRƯỚC khi insert TOC
+    headings = _collect_headings(doc)
+    figures = _collect_figures(doc)
     
-    fld = OxmlElement("w:fldSimple")
-    fld.set(qn("w:instr"), 'TOC \\o "1-3" \\h \\z \\u')
-    run._r.append(fld)
+    logging.info(f"Tìm thấy {len(headings)} headings và {len(figures)} hình ảnh")
     
-    current_para = toc_body
+    # ==================== TẠO MỤC LỤC ====================
+    first_paragraph = doc.paragraphs[0] if doc.paragraphs else None
+    if first_paragraph is not None:
+        toc_heading = first_paragraph.insert_paragraph_before("MỤC LỤC")
+    else:
+        toc_heading = doc.add_paragraph("MỤC LỤC")
+    
+    toc_heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    toc_heading.paragraph_format.space_after = Pt(12)
+    toc_heading.paragraph_format.space_before = Pt(0)
+    for run in toc_heading.runs:
+        run.font.name = STANDARD_FONT
+        run.font.size = TOC_FONT_SIZE
+        run.font.bold = True
+        _ensure_east_asia_font(run)
+        _force_run_font_xml(run)
+    
+    # Tạo các entry mục lục thủ công
+    current_para = toc_heading
+    
+    if headings:
+        for text, level, page_num in headings:
+            current_para = _create_toc_entry(doc, text, level, page_num, current_para)
+    else:
+        # Nếu không có heading, thêm placeholder
+        placeholder = _insert_paragraph_after(current_para, "(Chưa có mục lục - Hãy thêm các Heading vào văn bản)")
+        placeholder.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for run in placeholder.runs:
+            run.font.name = STANDARD_FONT
+            run.font.size = TOC_FONT_SIZE
+            run.font.italic = True
+            _ensure_east_asia_font(run)
+        current_para = placeholder
+    
+    # Page break sau mục lục
     toc_page_break = _insert_paragraph_after(current_para)
     toc_page_break.add_run().add_break(WD_BREAK.PAGE)
     current_para = toc_page_break
     
+    # ==================== TẠO DANH MỤC HÌNH ẢNH ====================
     tof_heading = _insert_paragraph_after(current_para, "DANH MỤC HÌNH ẢNH")
     tof_heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    tof_heading.paragraph_format.space_before = Pt(18)
-    tof_heading.paragraph_format.space_after = Pt(6)
+    tof_heading.paragraph_format.space_before = Pt(0)
+    tof_heading.paragraph_format.space_after = Pt(12)
     for run in tof_heading.runs:
-        _set_run_format(run, TOC_FONT_SIZE, bold=True)
+        run.font.name = STANDARD_FONT
+        run.font.size = TOC_FONT_SIZE
+        run.font.bold = True
+        _ensure_east_asia_font(run)
+        _force_run_font_xml(run)
     
-    tof_body = _insert_paragraph_after(tof_heading)
-    fmt_tof = tof_body.paragraph_format
-    fmt_tof.tab_stops.clear_all()
-    fmt_tof.tab_stops.add_tab_stop(Cm(16), WD_TAB_ALIGNMENT.RIGHT, WD_TAB_LEADER.DOTS)
-    fmt_tof.line_spacing = 1.5
-    fmt_tof.space_before = Pt(0)
-    fmt_tof.space_after = Pt(0)
+    current_para = tof_heading
     
-    # Tạo run với format font trước khi chèn field
-    run_tof = tof_body.add_run()
+    if figures:
+        for text, page_num in figures:
+            current_para = _create_toc_entry(doc, text, 1, page_num, current_para)
+    else:
+        # Nếu không có hình, thêm placeholder
+        placeholder = _insert_paragraph_after(current_para, "(Chưa có danh mục hình ảnh)")
+        placeholder.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for run in placeholder.runs:
+            run.font.name = STANDARD_FONT
+            run.font.size = TOC_FONT_SIZE
+            run.font.italic = True
+            _ensure_east_asia_font(run)
+        current_para = placeholder
     
-    # Force set font trong XML TRƯỚC khi chèn field
-    r_pr_tof = run_tof._element.get_or_add_rPr()
-    
-    # Xóa font cũ
-    for tag in ["rFonts", "sz", "szCs"]:
-        old = r_pr_tof.find(qn(f"w:{tag}"))
-        if old is not None:
-            r_pr_tof.remove(old)
-    
-    # Set font Times New Roman
-    r_fonts_tof = OxmlElement("w:rFonts")
-    r_fonts_tof.set(qn("w:ascii"), STANDARD_FONT)
-    r_fonts_tof.set(qn("w:hAnsi"), STANDARD_FONT)
-    r_fonts_tof.set(qn("w:eastAsia"), STANDARD_FONT)
-    r_fonts_tof.set(qn("w:cs"), STANDARD_FONT)
-    r_pr_tof.append(r_fonts_tof)
-    
-    # Set size 13pt
-    toc_size_half_pts = int(TOC_FONT_SIZE.pt * 2)
-    sz_tof = OxmlElement("w:sz")
-    sz_tof.set(qn("w:val"), str(toc_size_half_pts))
-    r_pr_tof.append(sz_tof)
-    sz_cs_tof = OxmlElement("w:szCs")
-    sz_cs_tof.set(qn("w:val"), str(toc_size_half_pts))
-    r_pr_tof.append(sz_cs_tof)
-    
-    # Set qua API cũng
-    run_tof.font.name = STANDARD_FONT
-    run_tof.font.size = TOC_FONT_SIZE
-    _ensure_east_asia_font(run_tof)
-    
-    tof_fld = OxmlElement("w:fldSimple")
-    tof_fld.set(qn("w:instr"), 'TOC \\h \\z \\t "UEL Figure,1"')
-    run_tof._r.append(tof_fld)
-    
-    current_para = tof_body
+    # Ghi chú hướng dẫn
     hint = _insert_paragraph_after(
         current_para,
-        "(* Nhấn Ctrl + A rồi F9 trong Word (chọn Update Entire Table) để cập nhật cả 2 mục lục *)",
+        "(* Lưu ý: Mục lục được tạo thủ công. Số trang là ước tính, vui lòng kiểm tra và chỉnh sửa nếu cần. *)",
     )
     hint.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    hint.paragraph_format.space_before = Pt(12)
     for run in hint.runs:
-        _set_run_format(run, TOC_FONT_SIZE, italic=True, color=RGBColor(200, 0, 0))
+        run.font.name = STANDARD_FONT
+        run.font.size = Pt(11)
+        run.font.italic = True
+        run.font.color.rgb = RGBColor(128, 128, 128)
+        _ensure_east_asia_font(run)
     
+    # Page break cuối
     page_break_para = _insert_paragraph_after(hint)
     page_break_para.add_run().add_break(WD_BREAK.PAGE)
     
     # Tạo section break để ngắt việc đánh số trang
     _add_section_break(page_break_para)
+    
+    logging.info(f"Đã tạo Mục lục thủ công với {len(headings)} entries, font {STANDARD_FONT} {TOC_FONT_SIZE.pt}pt")
 
 # =========================================================================
 # [SỬA QUAN TRỌNG] HÀM TẠO FIELD PAGE NUMBER BẰNG COMPLEX FIELD
@@ -647,82 +538,6 @@ def _create_element(name):
 
 def _create_attribute(element, name, value):
     element.set(qn(name), value)
-
-def _add_page_number_field_simple(run, instr="PAGE"):
-    """
-    Chèn field code trang bằng w:fldSimple (Simple Field)
-    Cách này đơn giản và đáng tin cậy hơn cho số trang.
-    """
-    # Xóa text mặc định của run
-    run.text = ""
-    
-    # Lưu lại rPr (format properties) nếu có
-    r_pr = run._element.find(qn('w:rPr'))
-    
-    # Xóa tất cả các element hiện có trong run
-    for child in list(run._element):
-        run._element.remove(child)
-    
-    # Khôi phục rPr nếu có để giữ format
-    if r_pr is not None:
-        run._element.append(r_pr)
-    
-    # Tạo Simple Field với text node bên trong
-    fld = OxmlElement('w:fldSimple')
-    fld.set(qn('w:instr'), instr)
-    
-    # Thêm text node vào trong field để hiển thị placeholder
-    t = OxmlElement('w:t')
-    t.text = "1"  # Placeholder - Word sẽ update thành số trang thực
-    fld.append(t)
-    
-    run._element.append(fld)
-
-def _add_page_number_field(run, instr="PAGE"):
-    """
-    Chèn field code trang bằng w:fldChar (Complex Field)
-    Cách này đảm bảo field nằm TRONG run và nhận định dạng font của run.
-    Theo chuẩn Office Open XML, rPr PHẢI đứng đầu tiên trong run.
-    """
-    # Xóa text mặc định của run nếu có
-    run.text = ""
-    
-    # Lưu lại rPr để đảm bảo format font không bị mất
-    r_pr = run._element.find(qn('w:rPr'))
-    
-    # Xóa tất cả các element
-    for child in list(run._element):
-        run._element.remove(child)
-    
-    # Thêm lại rPr vào đầu tiên nếu có (theo chuẩn Office Open XML)
-    if r_pr is not None:
-        run._element.insert(0, r_pr)
-    
-    # 1. Start Complex Field
-    fld_char_begin = OxmlElement('w:fldChar')
-    fld_char_begin.set(qn('w:fldCharType'), 'begin')
-    run._element.append(fld_char_begin)
-
-    # 2. Instruction Text
-    instr_text = OxmlElement('w:instrText')
-    instr_text.set(qn('xml:space'), 'preserve')
-    instr_text.text = instr
-    run._element.append(instr_text)
-
-    # 3. Separate Field (chia tách lệnh và kết quả hiển thị)
-    fld_char_separate = OxmlElement('w:fldChar')
-    fld_char_separate.set(qn('w:fldCharType'), 'separate')
-    run._element.append(fld_char_separate)
-
-    # 4. Display Text (Placeholder) - hiển thị số "1" cho đến khi Word update field
-    t = OxmlElement('w:t')
-    t.text = "1"
-    run._element.append(t)
-
-    # 5. End Complex Field
-    fld_char_end = OxmlElement('w:fldChar')
-    fld_char_end.set(qn('w:fldCharType'), 'end')
-    run._element.append(fld_char_end)
 
 def _apply_page_numbers(doc, options):
     if not options.get("add_page_numbers", True):
@@ -1129,7 +944,7 @@ def docx_to_html(doc: Document) -> str:
         html_parts.append(f'</{tag}>')
         
     for table in doc.tables:
-        html_parts.append('<table style="width: 100%; border-collapse: collapse; margin: 12pt 0; font-size: 13pt;">')
+        html_parts.append('<table style="width: 100%; border-collapse: collapse ; margin: 12pt 0; font-size: 13pt;">')
         for row in table.rows:
             html_parts.append('<tr>')
             for cell in row.cells:
