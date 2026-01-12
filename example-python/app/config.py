@@ -15,6 +15,14 @@ TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ============================================================================
+# CẤU HÌNH API - CONVERT PDF PREVIEW
+# ============================================================================
+# ConvertAPI Secret Key - Lấy miễn phí tại: https://www.convertapi.com/a/signup/free
+# Đăng ký -> Vào Account -> API Tokens -> Copy Sandbox Token
+CONVERTAPI_SECRET = "pzrYsSfAOsGUVt007DYajvlUsUW32QhE"  # <-- THAY BẰNG TOKEN CỦA BẠN
+
+
+# ============================================================================
 # CẤU HÌNH FONT CHỮ
 # ============================================================================
 # Font chữ chuẩn cho toàn bộ tài liệu

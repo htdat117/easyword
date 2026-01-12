@@ -1,105 +1,215 @@
 import streamlit as st
-import tempfile
 import uuid
 from pathlib import Path
-from io import BytesIO
 import logging
-
 from docx import Document
 from app.services.report_formatter import (
     format_uploaded_stream,
-    generate_template_stream,
     docx_to_html,
 )
-from app.config import TEMP_DIR
+from app.config import TEMP_DIR, CONVERTAPI_SECRET
 
 # ============================================================================
 # CẤU HÌNH STREAMLIT
 # ============================================================================
 st.set_page_config(
-    page_title="Chuẩn Hóa Báo Cáo Word",
-    page_icon="📄",
+    page_title="EasyReport - Chuẩn Hóa Báo Cáo",
+    page_icon="📝",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
-# Thiết lập logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 # ============================================================================
-# CSS TÙY CHỈNH
+# CSS - BENTO STYLE (Fixed colors)
 # ============================================================================
 st.markdown("""
 <style>
-    .main {
-        padding: 2rem;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    .stButton>button {
-        width: 100%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        font-size: 1rem;
-        font-weight: 600;
-        border-radius: 8px;
-        transition: transform 0.2s ease;
+    
+    .material-symbols-rounded {
+        font-family: 'Material Symbols Rounded';
+        font-weight: normal;
+        font-style: normal;
+        font-size: 28px;
+        display: inline-block;
+        line-height: 1;
+        text-transform: none;
+        letter-spacing: normal;
+        word-wrap: normal;
+        white-space: nowrap;
+        direction: ltr;
+        font-variation-settings: 'FILL' 1;
     }
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    
+    /* Main container */
+    .block-container {
+        padding-top: 2rem !important;
+        max-width: 1200px !important;
     }
-    .upload-section {
-        background: #f9fafb;
-        padding: 1.5rem;
-        border-radius: 12px;
-        border: 2px dashed #cbd5f5;
-        margin: 1rem 0;
-    }
-    .success-message {
-        padding: 1rem;
-        background: #d1fae5;
-        border-left: 4px solid #10b981;
-        border-radius: 8px;
-        margin: 1rem 0;
-    }
-    .error-message {
-        padding: 1rem;
-        background: #fee2e2;
-        border-left: 4px solid #ef4444;
-        border-radius: 8px;
-        margin: 1rem 0;
-    }
-    .info-box {
-        background: #f0f5ff;
-        border-left: 4px solid #667eea;
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-    }
-    h1 {
-        color: #2b2d42;
-        text-align: center;
-    }
-    h2 {
-        color: #4a4e69;
-        margin-top: 2rem;
-    }
-    h3 {
-        color: #667eea;
-    }
+    
+    /* Tab styling */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        padding: 1rem 2rem;
-        background-color: #f5f6fb;
-        border-radius: 8px 8px 0 0;
-        font-weight: 600;
-    }
-    .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white !important;
+        padding: 8px;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        padding: 12px 24px;
+        background: transparent;
+        border-radius: 12px;
+        color: rgba(255,255,255,0.7) !important;
+        font-weight: 600;
+        border: none;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: white !important;
+        color: #6366f1 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    /* Bento Cards */
+    .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin: 2rem 0;
+    }
+    
+    .bento-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .bento-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+    }
+    
+    .card-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+    
+    .card-icon .material-symbols-rounded {
+        font-size: 28px;
+    }
+    
+    .icon-purple .material-symbols-rounded { color: #8b5cf6; }
+    .icon-blue .material-symbols-rounded { color: #3b82f6; }
+    .icon-orange .material-symbols-rounded { color: #f97316; }
+    .icon-pink .material-symbols-rounded { color: #ec4899; }
+    
+    .icon-purple { background: #ede9fe; }
+    .icon-blue { background: #dbeafe; }
+    .icon-orange { background: #ffedd5; }
+    .icon-pink { background: #fce7f3; }
+    
+    .card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+    
+    .card-desc {
+        font-size: 0.9rem;
+        color: #64748b;
+        line-height: 1.5;
+    }
+    
+    /* Hero Section */
+    .hero-container {
+        text-align: center;
+        padding: 3rem 1rem;
+        background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        border-radius: 24px;
+        margin-bottom: 2rem;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        line-height: 1.2;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.1rem;
+        color: #64748b;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+    }
+    
+    /* Tool Container */
+    .tool-section {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Info boxes */
+    .info-box {
+        background: #eff6ff;
+        border-left: 4px solid #3b82f6;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        color: #1e40af;
+    }
+    
+    .success-box {
+        background: #dcfce7;
+        border-left: 4px solid #22c55e;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        color: #166534;
+    }
+    
+    /* Footer */
+    .footer {
+        text-align: center;
+        padding: 2rem;
+        color: #94a3b8;
+        font-size: 0.9rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -108,7 +218,6 @@ st.markdown("""
 # HÀM PHỤ TRỢ
 # ============================================================================
 def collect_options():
-    """Thu thập các tùy chọn định dạng từ sidebar"""
     return {
         "clean_whitespace": st.session_state.get("opt_clean", True),
         "normalize_font": st.session_state.get("opt_font", True),
@@ -123,439 +232,219 @@ def collect_options():
         "auto_numbered_heading": True,
     }
 
-def save_uploaded_file(uploaded_file):
-    """Lưu file được upload vào thư mục tạm"""
+def convert_docx_to_pdf_cloud(docx_path, output_pdf_path):
     try:
-        file_id = str(uuid.uuid4())
-        file_path = TEMP_DIR / f"{file_id}_{uploaded_file.name}"
-        with open(file_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        return file_path
+        import requests
+        api_secret = CONVERTAPI_SECRET
+        if not api_secret:
+            return None
+        url = f"https://v2.convertapi.com/convert/docx/to/pdf?Secret={api_secret}&download=attachment"
+        with open(docx_path, 'rb') as f:
+            files = {'File': ('document.docx', f, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')}
+            response = requests.post(url, files=files, timeout=60)
+            if response.status_code == 200:
+                with open(output_pdf_path, 'wb') as pdf_out:
+                    pdf_out.write(response.content)
+                return output_pdf_path
     except Exception as e:
-        st.error(f"Lỗi lưu file: {e}")
-        return None
+        logging.warning(f"ConvertAPI failed: {e}")
+    return None
+
+def display_pdf_in_iframe(pdf_path):
+    import base64
+    with open(pdf_path, "rb") as pdf_file:
+        base64_pdf = base64.b64encode(pdf_file.read()).decode('utf-8')
+        st.markdown(f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="700px" style="border:none;border-radius:12px;"></iframe>', unsafe_allow_html=True)
 
 def display_preview(doc: Document):
-    """Hiển thị preview của document dưới dạng HTML"""
+    temp_docx = TEMP_DIR / f"preview_{uuid.uuid4()}.docx"
+    temp_pdf = TEMP_DIR / f"preview_{uuid.uuid4()}.pdf"
     try:
+        doc.save(str(temp_docx))
+        if CONVERTAPI_SECRET:
+            with st.spinner("🔄 Đang tạo PDF Preview..."):
+                result_pdf = convert_docx_to_pdf_cloud(temp_docx, temp_pdf)
+                if result_pdf and result_pdf.exists():
+                    st.success("✅ PDF Preview sẵn sàng!")
+                    display_pdf_in_iframe(temp_pdf)
+                    return
+        st.info("📄 Hiển thị HTML Preview")
         html_content = docx_to_html(doc)
-        st.components.v1.html(html_content, height=800, scrolling=True)
+        st.components.v1.html(html_content, height=700, scrolling=True)
     except Exception as e:
-        st.error(f"Không thể hiển thị preview: {e}")
+        st.error(f"Lỗi: {e}")
+    finally:
+        try:
+            if temp_docx.exists(): temp_docx.unlink()
+            if temp_pdf.exists(): temp_pdf.unlink()
+        except: pass
 
 # ============================================================================
-# SIDEBAR - TÙY CHỌN ĐỊNH DẠNG
+# HEADER
 # ============================================================================
-with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/000000/microsoft-word-2019.png", width=80)
-    st.title("⚙️ Tùy Chọn Định Dạng")
-    
-    st.markdown("### 📋 Các tùy chọn UEL")
-    st.markdown('<div class="info-box">Áp dụng cho cả việc tạo mẫu mới và chuẩn hóa file tải lên.</div>', unsafe_allow_html=True)
-    
-    st.checkbox(
-        "🧹 Xóa dòng trống & dấu cách thừa",
-        value=True,
-        key="opt_clean",
-        help="Loại bỏ khoảng trắng thừa và dòng trống không cần thiết"
-    )
-    
-    st.checkbox(
-        "🔤 Áp dụng font Times New Roman 13pt / 14pt",
-        value=True,
-        key="opt_font",
-        help="Chuẩn hóa font chữ theo quy định UEL"
-    )
-    
-    st.checkbox(
-        "📏 Thiết lập lề chuẩn UEL",
-        value=True,
-        key="opt_margins",
-        help="Trái 3cm, Phải 2cm, Trên/Dưới 2cm"
-    )
-    
-    st.checkbox(
-        "↔️ Thụt đầu dòng 1.27cm và giãn dòng",
-        value=True,
-        key="opt_spacing",
-        help="Thụt đầu dòng và điều chỉnh khoảng cách dòng"
-    )
-    
-    st.number_input(
-        "📐 Giãn dòng (Line Spacing)",
-        min_value=1.0,
-        max_value=3.0,
-        value=1.3,
-        step=0.1,
-        key="line_spacing",
-        help="Khoảng cách giữa các dòng văn bản"
-    )
-    
-    st.checkbox(
-        "🎯 Nhận diện & chuẩn hóa tiêu đề",
-        value=True,
-        key="opt_heading",
-        help="Tự động nhận diện và định dạng tiêu đề"
-    )
-    
-    st.checkbox(
-        "📊 Chuẩn hóa định dạng trong bảng",
-        value=True,
-        key="opt_tables",
-        help="Áp dụng định dạng cho nội dung trong bảng"
-    )
-    
-    st.checkbox(
-        "📑 Chèn mục lục tự động",
-        value=True,
-        key="opt_toc",
-        help="Tạo mục lục và danh mục hình ảnh tự động"
-    )
-    
-    st.checkbox(
-        "🔢 Đánh số trang ở giữa chân trang",
-        value=True,
-        key="opt_page_numbers",
-        help="Thêm số trang tự động"
-    )
-    
-    st.selectbox(
-        "Kiểu số trang:",
-        options=["arabic", "roman"],
-        format_func=lambda x: "Số Ả Rập (1,2,3...)" if x == "arabic" else "Số La Mã (i, ii, iii...)",
-        key="opt_page_style"
-    )
-    
-    st.markdown("---")
-    st.markdown("### 📚 Hướng dẫn")
-    with st.expander("💡 Cách sử dụng"):
-        st.markdown("""
-        **Tạo báo cáo mới:**
-        1. Chuyển sang tab "Tạo Báo Cáo Mới"
-        2. Điền thông tin sinh viên và báo cáo
-        3. Nhấn "Tạo File Word"
-        
-        **Chuẩn hóa file có sẵn:**
-        1. Chuyển sang tab "Chuẩn Hóa File"
-        2. Tải lên file .docx
-        3. Nhấn "Chuẩn Hóa File"
-        4. Xem trước và tải về
-        
-        **Lưu ý:** Mục lục được tạo thủ công với font Times New Roman 13pt. Số trang là ước tính.
-        """)
+st.markdown("# ✨ EasyReport")
+st.markdown("*Công cụ chuẩn hóa báo cáo Word chuyên nghiệp*")
 
 # ============================================================================
-# MAIN APP
+# TABS: Tổng Quan & Trải Nghiệm
 # ============================================================================
-st.title("📄 Chuẩn Hóa Báo Cáo Word")
-st.markdown("### Công cụ chuẩn hóa báo cáo theo định dạng UEL")
-
-# Tạo tabs
-tab1, tab2 = st.tabs(["📝 Tạo Báo Cáo Mới", "📂 Chuẩn Hóa File Có Sẵn"])
+tab1, tab2 = st.tabs(["🏠 Tổng Quan", "🚀 Trải Nghiệm"])
 
 # ============================================================================
-# TAB 1: TẠO BÁO CÁO MỚI
+# TAB 1: TỔNG QUAN (Landing Page)
 # ============================================================================
 with tab1:
-    st.markdown("### Tạo file Word mới theo mẫu chuẩn UEL")
-    st.markdown('<div class="info-box">Nhập thông tin để tạo file Word theo mẫu chuẩn với đầy đủ cấu trúc báo cáo.</div>', unsafe_allow_html=True)
+    # Hero Section
+    st.markdown("""
+    <div class="hero-container">
+        <h1 class="hero-title">Biến báo cáo của bạn<br>trở nên hoàn hảo</h1>
+        <p class="hero-subtitle">Tự động chuẩn hóa định dạng văn bản theo quy chuẩn. Tiết kiệm 90% thời gian chỉnh sửa thủ công.</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        student_name = st.text_input(
-            "👤 Họ và tên sinh viên",
-            placeholder="Nguyễn Văn A",
-            help="Họ tên đầy đủ của sinh viên"
-        )
-        
-        student_id = st.text_input(
-            "🎓 Mã số sinh viên (MSSV)",
-            placeholder="K2140xxxx",
-            help="Mã số sinh viên"
-        )
-        
-        class_name = st.text_input(
-            "🏫 Lớp/Khoa",
-            placeholder="Công nghệ thông tin K45",
-            help="Tên lớp hoặc khoa"
-        )
-    
-    with col2:
-        report_title = st.text_input(
-            "📋 Tiêu đề báo cáo",
-            placeholder="BÁO CÁO MÔN...",
-            help="Tiêu đề chính của báo cáo"
-        )
-        
-        year = st.text_input(
-            "📅 Năm học",
-            placeholder="2024-2025",
-            help="Năm học thực hiện báo cáo"
-        )
-        
-        advisor = st.text_input(
-            "👨‍🏫 Giảng viên hướng dẫn",
-            placeholder="GVHD: ................................",
-            help="Tên giảng viên hướng dẫn"
-        )
-    
-    location = st.text_input(
-        "📍 Địa điểm",
-        value="TP. Hồ Chí Minh",
-        help="Địa điểm thực hiện báo cáo"
-    )
-    
-    st.markdown("#### 📝 Nội dung bổ sung")
-    
-    col3, col4 = st.columns(2)
-    
-    with col3:
-        intro = st.text_area(
-            "Phần mở đầu",
-            placeholder="Trình bày lý do chọn đề tài, mục tiêu, phạm vi và phương pháp nghiên cứu...",
-            height=150,
-            help="Nội dung phần mở đầu"
-        )
-        
-        content = st.text_area(
-            "Nội dung chính",
-            placeholder="Nêu hiện trạng thu thập được, số liệu minh họa và phân tích...",
-            height=150,
-            help="Nội dung chương 2"
-        )
-    
-    with col4:
-        solution = st.text_area(
-            "Giải pháp/Kiến nghị",
-            placeholder="Đề xuất giải pháp, kiến nghị chính sách và điều kiện thực hiện...",
-            height=150,
-            help="Nội dung chương 3"
-        )
-        
-        conclusion = st.text_area(
-            "Kết luận",
-            placeholder="Tóm tắt kết quả đạt được và hướng nghiên cứu tiếp theo...",
-            height=150,
-            help="Phần kết luận"
-        )
-    
-    references = st.text_area(
-        "Tài liệu tham khảo",
-        placeholder="APA (2019). Publication Manual of the American Psychological Association (7th ed.). APA Publishing.",
-        height=100,
-        help="Danh sách tài liệu tham khảo theo chuẩn APA"
-    )
+    # Bento Grid
+    st.markdown("""
+    <div class="bento-grid">
+        <div class="bento-card">
+            <div class="card-icon icon-purple"><span class="material-symbols-rounded">text_format</span></div>
+            <div class="card-title">Chuẩn Hóa Font</div>
+            <p class="card-desc">Tự động chuyển đổi về font Times New Roman 13/14pt theo đúng quy định.</p>
+        </div>
+        <div class="bento-card">
+            <div class="card-icon icon-blue"><span class="material-symbols-rounded">toc</span></div>
+            <div class="card-title">Mục Lục Tự Động</div>
+            <p class="card-desc">Tạo mục lục có số trang và danh mục hình ảnh chỉ với một click.</p>
+        </div>
+        <div class="bento-card">
+            <div class="card-icon icon-orange"><span class="material-symbols-rounded">format_align_justify</span></div>
+            <div class="card-title">Căn Lề Chuẩn</div>
+            <p class="card-desc">Lề trái 3cm, phải 2cm, trên/dưới 2cm và giãn dòng 1.3 theo quy chuẩn.</p>
+        </div>
+        <div class="bento-card">
+            <div class="card-icon icon-pink"><span class="material-symbols-rounded">bolt</span></div>
+            <div class="card-title">Xử Lý Nhanh</div>
+            <p class="card-desc">Upload file và nhận kết quả ngay lập tức với preview PDF trực quan.</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("---")
+    st.markdown("### 📖 Hướng dẫn sử dụng")
+    st.markdown("""
+    1. Chuyển sang tab **🚀 Trải Nghiệm**
+    2. Upload file Word (.docx) hoặc dùng Quick Test
+    3. Tùy chỉnh các options (nếu cần)
+    4. Nhấn **Chuẩn Hóa** và tải file kết quả về
+    """)
     
-    if st.button("🚀 Tạo File Word", type="primary", use_container_width=True):
-        if not student_name or not report_title:
-            st.error("⚠️ Vui lòng nhập ít nhất Họ tên và Tiêu đề báo cáo!")
-        else:
-            with st.spinner("Đang tạo file Word..."):
-                try:
-                    # Chuẩn bị payload
-                    payload = {
-                        "studentName": student_name,
-                        "studentId": student_id,
-                        "className": class_name,
-                        "reportTitle": report_title,
-                        "year": year,
-                        "advisor": advisor,
-                        "location": location,
-                        "intro": intro,
-                        "content": content,
-                        "solution": solution,
-                        "conclusion": conclusion,
-                        "references": references,
-                        "options": collect_options()
-                    }
-                    
-                    # Tạo file
-                    stream, filename = generate_template_stream(payload)
-                    
-                    # Hiển thị thông báo thành công
-                    st.markdown('<div class="success-message">✅ Đã tạo file báo cáo thành công!</div>', unsafe_allow_html=True)
-                    
-                    # Nút tải về
-                    st.download_button(
-                        label="⬇️ Tải File Về Máy",
-                        data=stream,
-                        file_name=filename,
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        use_container_width=True
-                    )
-                    
-                    st.success("💡 **Lưu ý:** Mục lục đã được tạo thủ công với font Times New Roman 13pt. Số trang là ước tính, vui lòng kiểm tra và chỉnh sửa nếu cần.")
-                    
-                except Exception as e:
-                    logging.error(f"Lỗi tạo báo cáo: {e}")
-                    st.markdown(f'<div class="error-message">❌ Lỗi: {str(e)}</div>', unsafe_allow_html=True)
+    st.markdown('<div class="footer">© 2026 EasyReport. Made with ❤️</div>', unsafe_allow_html=True)
 
 # ============================================================================
-# TAB 2: CHUẨN HÓA FILE CÓ SẴN
+# TAB 2: TRẢI NGHIỆM (Tool Page)
 # ============================================================================
 with tab2:
-    st.markdown("### Tải lên file Word để chuẩn hóa")
-    st.markdown('<div class="info-box">Tải lên file .docx chưa đúng format để hệ thống tự động chuẩn hóa theo tiêu chuẩn UEL.</div>', unsafe_allow_html=True)
+    # Options Section (Collapsible)
+    with st.expander("⚙️ Tùy chỉnh định dạng", expanded=False):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.checkbox("🧹 Xóa dòng trống thừa", value=True, key="opt_clean")
+            st.checkbox("🔤 Chuẩn hóa font chữ", value=True, key="opt_font")
+            st.checkbox("📏 Thiết lập lề chuẩn", value=True, key="opt_margins")
+        with col2:
+            st.checkbox("↔️ Thụt đầu dòng & giãn dòng", value=True, key="opt_spacing")
+            st.checkbox("🎯 Nhận diện tiêu đề", value=True, key="opt_heading")
+            st.checkbox("📊 Format bảng biểu", value=True, key="opt_tables")
+        with col3:
+            st.checkbox("📑 Tạo mục lục", value=True, key="opt_toc")
+            st.checkbox("🔢 Đánh số trang", value=True, key="opt_page_numbers")
+            st.number_input("Giãn dòng", value=1.3, step=0.1, key="line_spacing")
+    
+    st.markdown("---")
     
     # ==================== QUICK TEST SECTION ====================
-    st.markdown("---")
     st.markdown("### ⚡ Test Nhanh")
-    
-    # Đường dẫn file test mặc định
     TEST_FILE_PATH = Path(r"E:\Personal Project\test.docx")
     
     col_test1, col_test2 = st.columns([3, 1])
-    
     with col_test1:
-        test_file_path = st.text_input(
-            "📁 Đường dẫn file test",
-            value=str(TEST_FILE_PATH),
-            help="Nhập đường dẫn đến file Word cần test"
-        )
-    
+        test_file_path = st.text_input("📁 Đường dẫn file test", value=str(TEST_FILE_PATH))
     with col_test2:
         st.markdown("<br>", unsafe_allow_html=True)
-        quick_test_btn = st.button("🚀 Test Ngay!", type="primary", use_container_width=True, key="quick_test")
+        quick_test_btn = st.button("🚀 Test Ngay!", type="primary", use_container_width=True)
     
     if quick_test_btn:
         test_path = Path(test_file_path)
         if test_path.exists():
             with st.spinner(f"Đang xử lý {test_path.name}..."):
                 try:
-                    # Đọc file từ đường dẫn
                     with open(test_path, "rb") as f:
                         file_bytes = f.read()
-                    
-                    # Chuẩn hóa
                     options = collect_options()
-                    stream, filename = format_uploaded_stream(
-                        file_bytes,
-                        test_path.name,
-                        options
-                    )
-                    
-                    # Lưu vào session state
+                    stream, filename = format_uploaded_stream(file_bytes, test_path.name, options)
                     st.session_state["formatted_stream"] = stream
                     st.session_state["formatted_filename"] = filename
-                    
-                    # Tạo document để preview
                     stream.seek(0)
-                    doc = Document(stream)
-                    st.session_state["formatted_doc"] = doc
-                    
-                    st.markdown('<div class="success-message">✅ Test thành công! File đã được chuẩn hóa.</div>', unsafe_allow_html=True)
+                    st.session_state["formatted_doc"] = Document(stream)
+                    st.success("✅ Test thành công!")
                     st.balloons()
-                    
                 except Exception as e:
-                    logging.error(f"Lỗi test: {e}")
-                    import traceback
-                    st.markdown(f'<div class="error-message">❌ Lỗi: {str(e)}</div>', unsafe_allow_html=True)
-                    with st.expander("Chi tiết lỗi"):
-                        st.code(traceback.format_exc())
+                    st.error(f"❌ Lỗi: {e}")
         else:
             st.error(f"❌ File không tồn tại: {test_file_path}")
     
     st.markdown("---")
-    st.markdown("### 📂 Upload File Thủ Công")
     
-    # Upload file
-    uploaded_file = st.file_uploader(
-        "📎 Chọn file Word (.docx)",
-        type=["docx"],
-        help="Chọn file Word cần chuẩn hóa"
-    )
+    # ==================== UPLOAD SECTION ====================
+    st.markdown("### 📂 Upload File")
+    uploaded_file = st.file_uploader("Kéo thả hoặc chọn file Word (.docx)", type=["docx"])
     
-    if uploaded_file is not None:
-        st.success(f"✅ Đã chọn file: **{uploaded_file.name}**")
+    if uploaded_file:
+        st.success(f"✅ Đã chọn: **{uploaded_file.name}**")
         
-        col1, col2 = st.columns([1, 1])
-        
+        col1, col2 = st.columns(2)
         with col1:
-            if st.button("🔄 Chuẩn Hóa File", type="primary", use_container_width=True):
-                with st.spinner("Đang xử lý file..."):
+            if st.button("✨ CHUẨN HÓA", type="primary", use_container_width=True):
+                with st.spinner("Đang xử lý..."):
                     try:
-                        # Đọc file
                         file_bytes = uploaded_file.read()
-                        
-                        # Chuẩn hóa
                         options = collect_options()
-                        stream, filename = format_uploaded_stream(
-                            file_bytes,
-                            uploaded_file.name,
-                            options
-                        )
-                        
-                        # Lưu vào session state
+                        stream, filename = format_uploaded_stream(file_bytes, uploaded_file.name, options)
                         st.session_state["formatted_stream"] = stream
                         st.session_state["formatted_filename"] = filename
-                        
-                        # Tạo document để preview
                         stream.seek(0)
-                        doc = Document(stream)
-                        st.session_state["formatted_doc"] = doc
-                        
-                        st.markdown('<div class="success-message">✅ Đã chuẩn hóa file thành công!</div>', unsafe_allow_html=True)
+                        st.session_state["formatted_doc"] = Document(stream)
+                        st.success("✅ Chuẩn hóa thành công!")
                         st.balloons()
-                        
                     except Exception as e:
-                        logging.error(f"Lỗi chuẩn hóa: {e}")
-                        st.markdown(f'<div class="error-message">❌ Lỗi: {str(e)}</div>', unsafe_allow_html=True)
+                        st.error(f"❌ Lỗi: {e}")
         
         with col2:
-            # Nút reset
             if st.button("🔄 Reset", use_container_width=True):
-                if "formatted_stream" in st.session_state:
-                    del st.session_state["formatted_stream"]
-                if "formatted_filename" in st.session_state:
-                    del st.session_state["formatted_filename"]
-                if "formatted_doc" in st.session_state:
-                    del st.session_state["formatted_doc"]
+                for key in ["formatted_stream", "formatted_filename", "formatted_doc"]:
+                    if key in st.session_state:
+                        del st.session_state[key]
                 st.rerun()
     
-    # Hiển thị kết quả
-    if "formatted_stream" in st.session_state and "formatted_filename" in st.session_state:
+    # ==================== RESULTS SECTION ====================
+    if "formatted_stream" in st.session_state:
         st.markdown("---")
-        st.markdown("### 📥 File đã chuẩn hóa")
+        st.markdown("### 📥 Kết quả")
         
         col1, col2 = st.columns([2, 1])
-        
         with col1:
             st.info(f"**File:** {st.session_state['formatted_filename']}")
-        
         with col2:
-            # Nút tải về
             st.session_state["formatted_stream"].seek(0)
             st.download_button(
-                label="⬇️ Tải File Về",
-                data=st.session_state["formatted_stream"],
+                "⬇️ Tải File Về",
+                st.session_state["formatted_stream"],
                 file_name=st.session_state["formatted_filename"],
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 use_container_width=True
             )
         
         st.markdown("---")
-        
-        # Preview
-        st.markdown("### 👁️ Xem Trước File")
-        
-        if "formatted_doc" in st.session_state:
-            with st.expander("📄 Hiển thị nội dung", expanded=True):
+        st.markdown("### 👁️ Xem Trước")
+        with st.expander("📄 Mở Preview", expanded=True):
+            if "formatted_doc" in st.session_state:
                 display_preview(st.session_state["formatted_doc"])
-        
-        st.success("💡 **Lưu ý:** Mục lục đã được tạo thủ công với font Times New Roman 13pt. Số trang là ước tính, vui lòng kiểm tra và chỉnh sửa nếu cần.")
-
-# ============================================================================
-# FOOTER
-# ============================================================================
-st.markdown("---")
-st.markdown("""
-<div style="text-align: center; color: #718096; padding: 2rem 0;">
-    <p>📄 <strong>Công cụ Chuẩn Hóa Báo Cáo Word</strong></p>
-    <p>Phát triển cho Trường Đại học Kinh tế - Luật (UEL)</p>
-    <p style="font-size: 0.875rem;">Sử dụng công cụ này để đảm bảo báo cáo của bạn đạt chuẩn định dạng UEL</p>
-</div>
-""", unsafe_allow_html=True)
-

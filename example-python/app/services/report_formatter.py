@@ -881,106 +881,219 @@ def format_uploaded_stream(file_bytes, filename, options_payload):
     return build_report_stream(doc, safe_name)
 
 def docx_to_html(doc: Document) -> str:
-    html_parts = ['<div class="docx-preview" style="font-family: \'Times New Roman\', serif; max-width: 210mm; margin: 0 auto; padding: 20mm 35mm 20mm 25mm; background: white; line-height: 1.3;">']
+    """
+    Convert docx document to HTML for preview.
+    Improved version that better represents TOC, page numbers, and formatting.
+    """
+    html_parts = ['<div class="docx-preview">']
+    
     for paragraph in doc.paragraphs:
-        if not paragraph.text.strip():
-            html_parts.append('<p style="margin: 0.5em 0;"><br></p>')
-            continue
+        text = paragraph.text.strip()
         style_name = paragraph.style.name if paragraph.style else ""
+        
+        # Skip empty paragraphs but add spacing
+        if not text:
+            html_parts.append('<p class="empty-line">&nbsp;</p>')
+            continue
+        
+        # Detect paragraph type
         is_heading = style_name.lower().startswith("heading") if style_name else False
-        is_caption = (style_name == "UEL Figure" or style_name == "Caption")
+        is_caption = style_name in ["UEL Figure", "Caption"]
+        is_toc = style_name.startswith("TOC") or "MỤC LỤC" in text or "DANH MỤC" in text
+        is_toc_entry = style_name.startswith("TOC") and style_name != "TOC Heading"
         
-        if is_heading:
-            level = 1
-            if "heading" in style_name.lower():
-                try:
-                    level = int(style_name.split()[-1]) if style_name.split()[-1].isdigit() else 1
-                except:
-                    level = 1
-            level = min(max(level, 1), 6)
-            tag = f"h{level}"
-        else:
+        # Check for centered titles
+        is_centered_title = (
+            text in ["MỤC LỤC", "DANH MỤC HÌNH ẢNH"] or
+            (paragraph.alignment == WD_ALIGN_PARAGRAPH.CENTER and len(text) < 50 and text.isupper())
+        )
+        
+        # Check if this is a hint/note line
+        is_hint = text.startswith("(* Lưu ý:") or text.startswith("(*")
+        
+        # Determine CSS class and tag
+        if is_centered_title:
+            css_class = "toc-title"
+            tag = "h2"
+        elif is_toc_entry or (is_toc and "\t" in paragraph.text):
+            css_class = "toc-entry"
             tag = "p"
-            
-        alignment_map = {
-            WD_ALIGN_PARAGRAPH.CENTER: "center",
-            WD_ALIGN_PARAGRAPH.RIGHT: "right",
-            WD_ALIGN_PARAGRAPH.JUSTIFY: "justify",
-            WD_ALIGN_PARAGRAPH.LEFT: "left",
-        }
-        align = alignment_map.get(paragraph.alignment, "left")
-        para_style = f"text-align: {align};"
-        
-        if is_heading:
-            para_style += " font-weight: bold; margin: 12pt 0;"
-            if level == 1:
-                para_style += " font-size: 14pt;"
-            else:
-                para_style += " font-size: 13pt;"
+        elif is_heading:
+            level = 1
+            try:
+                level = int(style_name.split()[-1]) if style_name.split()[-1].isdigit() else 1
+            except:
+                level = 1
+            level = min(max(level, 1), 6)
+            css_class = f"heading-{level}"
+            tag = f"h{level}"
         elif is_caption:
-            para_style += " font-style: italic; margin: 6pt 0; font-size: 13pt;"
+            css_class = "caption"
+            tag = "p"
+        elif is_hint:
+            css_class = "hint"
+            tag = "p"
         else:
-            para_style += " font-size: 13pt; text-indent: 1cm; margin: 6pt 0;"
-            
-        html_parts.append(f'<{tag} style="{para_style}">')
-        if paragraph.runs:
-            for run in paragraph.runs:
-                run_text = escape(run.text)
-                if not run_text:
-                    continue
-                run_style = ""
-                if run.bold:
-                    run_style += "font-weight: bold; "
-                if run.italic:
-                    run_style += "font-style: italic; "
-                if run.underline:
-                    run_style += "text-decoration: underline; "
-                if run_style:
-                    html_parts.append(f'<span style="{run_style}">{run_text}</span>')
-                else:
-                    html_parts.append(run_text)
-        else:
-            html_parts.append(escape(paragraph.text))
-        html_parts.append(f'</{tag}>')
+            css_class = "body-text"
+            tag = "p"
         
+        # Build content with proper formatting
+        content_html = ""
+        
+        if is_toc_entry or (is_toc and "\t" in paragraph.text):
+            # Format TOC entry with dots
+            # Parse text and page number
+            parts = text.split("\t") if "\t" in text else [text]
+            if len(parts) >= 2:
+                entry_text = parts[0].strip()
+                page_num = parts[-1].strip()
+                content_html = f'<span class="toc-text">{escape(entry_text)}</span><span class="toc-dots"></span><span class="toc-page">{escape(page_num)}</span>'
+            else:
+                # Just text, no page number visible
+                content_html = escape(text)
+        elif paragraph.runs:
+            for run in paragraph.runs:
+                run_text = escape(run.text) if run.text else ""
+                if not run_text.strip():
+                    content_html += run_text
+                    continue
+                
+                # Build inline styles
+                styles = []
+                if run.bold:
+                    styles.append("font-weight: bold")
+                if run.italic:
+                    styles.append("font-style: italic")
+                if run.underline:
+                    styles.append("text-decoration: underline")
+                
+                if styles:
+                    content_html += f'<span style="{"; ".join(styles)}">{run_text}</span>'
+                else:
+                    content_html += run_text
+        else:
+            content_html = escape(text)
+        
+        html_parts.append(f'<{tag} class="{css_class}">{content_html}</{tag}>')
+    
+    # Add tables
     for table in doc.tables:
-        html_parts.append('<table style="width: 100%; border-collapse: collapse ; margin: 12pt 0; font-size: 13pt;">')
+        html_parts.append('<table class="doc-table">')
         for row in table.rows:
             html_parts.append('<tr>')
             for cell in row.cells:
                 cell_text = escape(cell.text.strip().replace('\n', '<br>'))
-                html_parts.append(f'<td style="border: 1px solid #ddd; padding: 8px;">{cell_text}</td>')
+                html_parts.append(f'<td>{cell_text}</td>')
             html_parts.append('</tr>')
         html_parts.append('</table>')
+    
     html_parts.append('</div>')
     
+    # Generate full HTML with improved CSS
     full_html = f"""<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xem trước</title>
+    <title>Xem trước tài liệu</title>
     <style>
+        * {{
+            box-sizing: border-box;
+        }}
         body {{
             margin: 0;
             padding: 20px;
-            background: #f5f5f5;
-            font-family: 'Times New Roman', serif;
+            background: #e5e5e5;
+            font-family: 'Times New Roman', 'Serif', Georgia, serif;
+            font-size: 13pt;
+            line-height: 1.5;
         }}
         .docx-preview {{
             background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 210mm;
             min-height: 297mm;
-            box-sizing: border-box;
+            margin: 0 auto;
+            padding: 2cm 2cm 2cm 3cm;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }}
-        @media print {{
-            body {{
-                background: white;
-                padding: 0;
-            }}
-            .docx-preview {{
-                box-shadow: none;
-            }}
+        .empty-line {{
+            margin: 0.3em 0;
+            height: 1em;
+        }}
+        .toc-title {{
+            text-align: center;
+            font-weight: bold;
+            font-size: 14pt;
+            margin: 1em 0 0.8em 0;
+            text-transform: uppercase;
+        }}
+        .toc-entry {{
+            display: flex;
+            align-items: baseline;
+            margin: 0.3em 0;
+            padding-left: 0;
+            text-indent: 0;
+        }}
+        .toc-text {{
+            flex-shrink: 0;
+        }}
+        .toc-dots {{
+            flex-grow: 1;
+            border-bottom: 1px dotted #333;
+            margin: 0 8px;
+            min-width: 20px;
+        }}
+        .toc-page {{
+            flex-shrink: 0;
+            text-align: right;
+        }}
+        .heading-1 {{
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 1em 0 0.5em 0;
+        }}
+        .heading-2 {{
+            font-size: 13pt;
+            font-weight: bold;
+            margin: 0.8em 0 0.4em 0;
+        }}
+        .heading-3 {{
+            font-size: 13pt;
+            font-weight: bold;
+            margin: 0.6em 0 0.3em 0;
+        }}
+        .body-text {{
+            text-align: justify;
+            text-indent: 1.27cm;
+            margin: 0.3em 0;
+        }}
+        .caption {{
+            text-align: center;
+            font-style: italic;
+            margin: 0.5em 0;
+        }}
+        .hint {{
+            text-align: center;
+            font-style: italic;
+            color: #666;
+            font-size: 11pt;
+            margin: 1em 0;
+        }}
+        .doc-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+        }}
+        .doc-table td {{
+            border: 1px solid #333;
+            padding: 8px;
+            vertical-align: top;
+        }}
+        /* Page break simulation */
+        hr.page-break {{
+            border: none;
+            border-top: 2px dashed #ccc;
+            margin: 2em 0;
         }}
     </style>
 </head>

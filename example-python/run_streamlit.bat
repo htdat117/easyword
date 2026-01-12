@@ -5,5 +5,5 @@ echo ========================================
 echo.
 echo Đang khởi động ứng dụng...
 echo.
-streamlit run streamlit_app.py
+streamlit run streamlit_app.py --server.port 8503
 
