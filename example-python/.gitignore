@@ -1,4 +1,4 @@
-# Python
+# Dependencies
 __pycache__/
 *.py[cod]
 *$py.class
@@ -20,41 +20,27 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environment
+# Environment
+.env
+.venv
+env/
 venv/
 ENV/
-env/
 
-# IDEs
-.vscode/
+# IDE
 .idea/
+.vscode/
 *.swp
 *.swo
-*~
 
-# Streamlit
-.streamlit/secrets.toml
-
-# Temporary files
-*.docx~
-*.tmp
+# Temp files
 temp/
-tmp/
+*.tmp
+*.bak
 
-# OS
+# Local test files (don't deploy)
+test.docx
+
+# OS files
 .DS_Store
 Thumbs.db
-
-# Logs
-*.log
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Project specific
-frontend/
-main.py
-app/routes/
-
