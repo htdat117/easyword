@@ -57,30 +57,22 @@ body{background-color:#F9FAFB;color:var(--text-dark);line-height:1.6}
 .btn-login{color:var(--text-dark);margin-right:15px;text-decoration:none;font-weight:500;padding:8px 16px;border-radius:6px}
 .btn-signup{background-color:var(--primary-color);color:var(--white);text-decoration:none;padding:8px 20px;border-radius:6px;font-weight:500;transition:background 0.3s}
 .btn-signup:hover{background:var(--primary-dark);color:white}
-.hero{text-align:center;padding:80px 0 60px;background:linear-gradient(180deg,#FFFFFF 0%,#EFF6FF 100%)}
+.hero-section{text-align:center;padding:80px 0 100px;background:linear-gradient(180deg,#FFFFFF 0%,#EFF6FF 100%)}
 .hero-title{font-size:3rem;color:#111827;margin-bottom:16px;line-height:1.2;font-weight:700}
 .hero-desc{font-size:1.125rem;color:var(--text-light);margin-bottom:40px;max-width:600px;margin-left:auto;margin-right:auto}
-.tool-box-wrapper{background:var(--white);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.05);padding:30px;max-width:800px;margin:0 auto;border:1px solid #E5E7EB}
-[data-testid="stTabs"]{display:flex;justify-content:center;gap:15px;margin-bottom:20px}
-div[data-testid="stTabs"] button[data-testid="stTab"]{background-color:transparent;border:none;border-bottom:2px solid transparent;color:#6B7280;font-weight:600;padding:10px 20px;height:auto;border-radius:0}
-div[data-testid="stTabs"] button[data-testid="stTab"]:hover{color:#2563EB}
-div[data-testid="stTabs"] button[data-testid="stTab"][aria-selected="true"]{color:#2563EB;border-bottom:2px solid #2563EB}
-[data-testid="stTabs"]>div:first-child{border-bottom:none!important}
-[data-testid="stFileUploader"]{border:2px dashed #D1D5DB;border-radius:12px;padding:50px 20px;background-color:#F9FAFB;transition:all 0.3s;text-align:center;position:relative;min-height:200px}
-[data-testid="stFileUploader"]:hover{border-color:#2563EB;background-color:#EFF6FF}
-[data-testid="stFileUploader"] label{display:none!important}
-[data-testid="stFileUploader"] section{background:transparent!important;border:none!important;padding:0!important}
-[data-testid="stFileUploader"] section>div{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important}
-[data-testid="stFileUploader"] section>div>span{display:none!important}
-[data-testid="stFileUploader"] section small{display:none!important}
-[data-testid="stFileUploader"]::before{content:"\\f0ee";font-family:"Font Awesome 6 Free";font-weight:900;font-size:3rem;color:#2563EB;display:block;margin-bottom:15px}
-[data-testid="stFileUploader"]::after{content:"Kéo thả hoặc chọn file Word (.docx)";font-size:1.1rem;font-weight:600;color:#1F2937;display:block;margin-bottom:5px}
-.upload-hint{font-size:0.9rem;color:#9CA3AF;margin-top:5px;display:block;text-align:center}
-[data-testid="stFileUploader"] button{display:inline-block!important;background:#E5E7EB!important;color:#374151!important;border:1px solid #D1D5DB!important;padding:8px 16px!important;border-radius:8px!important;font-size:0.9rem!important;font-weight:500!important;margin-top:15px!important;cursor:pointer!important}
-[data-testid="stFileUploader"] button:hover{background:#D1D5DB!important}
-div.stButton>button{display:block;width:100%;padding:15px;background-color:#2563EB;color:#FFFFFF;border:none;border-radius:8px;font-size:1rem;font-weight:600;margin-top:20px;cursor:pointer;box-shadow:none}
-div.stButton>button:hover{background-color:#1D4ED8;color:#FFFFFF;border-color:#1D4ED8}
-div.stButton>button:active{color:#FFFFFF}
+.tool-box{background:var(--white);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.05);padding:30px;max-width:800px;margin:0 auto;border:1px solid #E5E7EB}
+.tabs{display:flex;gap:15px;margin-bottom:20px;justify-content:center}
+.tab-btn{padding:10px 20px;border:none;background:transparent;font-weight:600;color:var(--text-light);cursor:pointer;border-bottom:2px solid transparent;display:inline-flex;align-items:center;gap:8px}
+.tab-btn.active{color:var(--primary-color);border-color:var(--primary-color)}
+.upload-area{border:2px dashed #D1D5DB;border-radius:12px;padding:50px 20px;text-align:center;cursor:pointer;transition:border-color 0.3s;background-color:#F9FAFB}
+.upload-area:hover{border-color:var(--primary-color);background-color:#EFF6FF}
+.upload-icon{font-size:3rem;color:var(--primary-color);margin-bottom:15px}
+.upload-title{font-size:1.1rem;font-weight:600;color:#1F2937;margin-bottom:5px}
+.upload-hint{font-size:0.9rem;color:#9CA3AF;margin-top:5px}
+.browse-btn{display:inline-block;background:#E5E7EB;color:#374151;border:1px solid #D1D5DB;padding:8px 16px;border-radius:8px;font-size:0.9rem;font-weight:500;margin-top:15px;cursor:pointer}
+.browse-btn:hover{background:#D1D5DB}
+.btn-action{display:block;width:100%;padding:15px;background-color:var(--primary-color);color:var(--white);border:none;border-radius:8px;font-size:1rem;font-weight:600;margin-top:20px;cursor:pointer;transition:background 0.3s;text-align:center}
+.btn-action:hover{background-color:var(--primary-dark)}
 .features{padding:80px 0;background-color:var(--white)}
 .feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:30px}
 .feature-card{padding:30px;border-radius:12px;background:#F8FAFC;transition:transform 0.3s,box-shadow 0.3s;border:1px solid transparent}
@@ -97,12 +89,13 @@ div.stButton>button:active{color:#FFFFFF}
 .cta-section{padding:80px 0;background:linear-gradient(135deg,#2563EB 0%,#1E40AF 100%);color:var(--white);text-align:center}
 .btn-white{display:inline-block;background:var(--white);color:var(--primary-color)!important;padding:15px 40px;border-radius:8px;font-weight:700;text-decoration:none;margin-top:20px;transition:transform 0.2s}
 .btn-white:hover{transform:scale(1.05)}
-.custom-footer{background-color:#111827;color:#D1D5DB;padding:60px 0 20px;margin-top:-100px}
+.custom-footer{background-color:#111827;color:#D1D5DB;padding:60px 0 20px}
 .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
 .footer-col h4{color:white;margin-bottom:20px;font-weight:600}
 .footer-col a{color:#9CA3AF;text-decoration:none;display:block;margin-bottom:10px}
 .footer-col a:hover{color:white}
 @media (max-width:768px){.footer-grid{grid-template-columns:1fr;text-align:center}.hero-title{font-size:2rem}}
+.stFileUploader{display:none}
 </style>
 """, unsafe_allow_html=True)
 
@@ -211,31 +204,61 @@ st.markdown("""
 </header>
 """, unsafe_allow_html=True)
 
-# 2. HERO
+# 2. HERO SECTION WITH TOOL BOX INSIDE
 st.markdown("""
-<section class="hero">
+<section class="hero-section">
 <div class="container">
 <h1 class="hero-title">Tạo Tài Liệu Word Chuyên Nghiệp<br>Trong Tích Tắc</h1>
 <p class="hero-desc">Upload file định dạng thô của bạn và để EasyWord xử lý mọi thứ với công nghệ AI tiên tiến. Tiết kiệm 90% thời gian định dạng.</p>
+<div class="tool-box">
+<div class="tabs">
+<button class="tab-btn active"><i class="fa-solid fa-cloud-arrow-up"></i> Upload File</button>
+<button class="tab-btn"><i class="fa-solid fa-bolt"></i> Test Nhanh</button>
+</div>
+<div class="upload-area" id="upload-zone">
+<i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+<div class="upload-title">Kéo thả hoặc chọn file Word (.docx)</div>
+<div class="upload-hint">Giới hạn 200MB/file • Hỗ trợ DOCX</div>
+<button class="browse-btn">Browse File</button>
+</div>
+<button class="btn-action"><i class="fa-solid fa-wand-magic-sparkles"></i> Bắt đầu xử lý ngay</button>
+</div>
 </div>
 </section>
 """, unsafe_allow_html=True)
 
-# 3. TOOL BOX (Interactive)
-st.markdown('<div class="container"><div class="tool-box-wrapper">', unsafe_allow_html=True)
+# Hidden file uploader for functionality
+uploaded_file = st.file_uploader("Upload Word File", type=["docx"], label_visibility="collapsed", key="hidden_uploader")
 
-# Tabs
-tab1, tab2 = st.tabs(["☁️ Upload File", "⚡ Test Nhanh"])
-
-with tab1:
-    st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
-    uploaded_file = st.file_uploader("Upload Word File", type=["docx"], label_visibility="collapsed")
-    st.markdown('<p class="upload-hint">Giới hạn 200MB/file • Hỗ trợ DOCX</p>', unsafe_allow_html=True)
+# JavaScript to connect custom UI to Streamlit uploader
+st.markdown("""
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('upload-zone');
+    const browseBtn = document.querySelector('.browse-btn');
+    const streamlitUploader = document.querySelector('[data-testid="stFileUploader"] input[type="file"]');
     
-    if uploaded_file:
-        st.success(f"✅ Selected: {uploaded_file.name}")
-        
-    # Options inside expander to keep clean
+    if (browseBtn && streamlitUploader) {
+        browseBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            streamlitUploader.click();
+        });
+    }
+    
+    if (uploadArea && streamlitUploader) {
+        uploadArea.addEventListener('click', function() {
+            streamlitUploader.click();
+        });
+    }
+});
+</script>
+""", unsafe_allow_html=True)
+
+# Process button logic
+if uploaded_file:
+    st.success(f"✅ File đã chọn: {uploaded_file.name}")
+    
+    # Options inside expander
     with st.expander("⚙️ Tùy chỉnh nâng cao"):
         col1, col2 = st.columns(2)
         with col1:
@@ -247,47 +270,21 @@ with tab1:
             st.checkbox("Đánh số trang", value=True, key="opt_page_numbers")
             st.number_input("Giãn dòng", 1.0, 2.0, 1.3, 0.1, key="line_spacing")
 
-    if st.button("✨ Bắt đầu xử lý ngay", type="primary", key="btn_process_upload"):
-        if uploaded_file:
-            with st.spinner("Đang xử lý..."):
-                try:
-                    bytes_data = uploaded_file.read()
-                    opts = collect_options()
-                    stream, name = format_uploaded_stream(bytes_data, uploaded_file.name, opts)
-                    st.session_state["result_stream"] = stream
-                    st.session_state["result_name"] = name
-                    stream.seek(0)
-                    st.session_state["result_doc"] = Document(stream)
-                    st.success("Xử lý thành công!")
-                except Exception as e:
-                    st.error(f"Lỗi: {e}")
-        else:
-            st.warning("Vui lòng upload file trước!")
+    if st.button("✨ Bắt đầu xử lý", type="primary", key="btn_process"):
+        with st.spinner("Đang xử lý..."):
+            try:
+                bytes_data = uploaded_file.read()
+                opts = collect_options()
+                stream, name = format_uploaded_stream(bytes_data, uploaded_file.name, opts)
+                st.session_state["result_stream"] = stream
+                st.session_state["result_name"] = name
+                stream.seek(0)
+                st.session_state["result_doc"] = Document(stream)
+                st.success("Xử lý thành công!")
+            except Exception as e:
+                st.error(f"Lỗi: {e}")
 
-with tab2:
-    st.info("Sử dụng file mẫu để kiểm tra nhanh tính năng")
-    if st.button("🚀 Chạy Test Ngay", key="btn_test_quick"):
-        test_path = Path("test.docx")
-        if test_path.exists():
-             with st.spinner("Đang xử lý test..."):
-                try:
-                    with open(test_path, "rb") as f:
-                        bytes_data = f.read()
-                    opts = collect_options()
-                    stream, name = format_uploaded_stream(bytes_data, "test_result.docx", opts)
-                    st.session_state["result_stream"] = stream
-                    st.session_state["result_name"] = name
-                    stream.seek(0)
-                    st.session_state["result_doc"] = Document(stream)
-                    st.success("Test thành công!")
-                except Exception as e:
-                    st.error(f"Lỗi: {e}")
-        else:
-            st.error("Không tìm thấy file test.docx")
-
-st.markdown('</div></div>', unsafe_allow_html=True) # End tool-box-wrapper
-
-# 4. RESULTS (If any)
+# 3. RESULTS (If any)
 if "result_stream" in st.session_state:
     st.markdown('<div class="container" style="margin-top: 2rem;">', unsafe_allow_html=True)
     st.markdown("### 📥 Kết quả")
@@ -310,7 +307,7 @@ if "result_stream" in st.session_state:
     st.markdown('</div>', unsafe_allow_html=True)
 
 
-# 5. FEATURES SECTION
+# 4. FEATURES SECTION
 st.markdown("""
 <section class="features">
 <div class="container">
@@ -354,7 +351,7 @@ st.markdown("""
 </section>
 """, unsafe_allow_html=True)
 
-# 6. CTA SECTION
+# 5. CTA SECTION
 st.markdown("""
 <section class="cta-section">
 <div class="container">
@@ -365,7 +362,7 @@ st.markdown("""
 </section>
 """, unsafe_allow_html=True)
 
-# 7. FOOTER
+# 6. FOOTER
 st.markdown("""
 <footer class="custom-footer">
 <div class="container">
