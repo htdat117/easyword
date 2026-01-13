@@ -127,7 +127,7 @@ async function processFile() {
         let filename = 'formatted-document.docx';
 
         if (contentDisposition) {
-            const match = contentDisposition.match(/filename="?(.+)"?/);
+            const match = contentDisposition.match(/filename="([^"]+)"/);
             if (match) filename = match[1];
         }
 
@@ -157,7 +157,7 @@ async function runTest() {
         let filename = 'formatted-test_result.docx';
 
         if (contentDisposition) {
-            const match = contentDisposition.match(/filename="?(.+)"?/);
+            const match = contentDisposition.match(/filename="([^"]+)"/);
             if (match) filename = match[1];
         }
 
