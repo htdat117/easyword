@@ -543,39 +543,162 @@ def convert_docx_to_pdf_cloud(docx_path, output_pdf_path):
         logging.warning(f"ConvertAPI failed: {e}")
     return None
 
-def display_pdf_in_iframe(pdf_path):
+def display_pdf_with_pdfjs(pdf_path):
+    """Hiển thị PDF bằng PDF.js - không bị browser chặn"""
     import base64
     with open(pdf_path, "rb") as pdf_file:
         base64_pdf = base64.b64encode(pdf_file.read()).decode('utf-8')
-        st.markdown(f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="700px" style="border:none;border-radius:12px;"></iframe>', unsafe_allow_html=True)
+    
+    # PDF.js viewer HTML
+    pdfjs_html = f'''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+        <style>
+            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            body {{ background: #525659; font-family: Arial, sans-serif; }}
+            .toolbar {{
+                background: #323639;
+                padding: 8px 16px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+            }}
+            .toolbar button {{
+                background: #4a4d50;
+                border: none;
+                color: white;
+                padding: 6px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+            }}
+            .toolbar button:hover {{ background: #5a5d60; }}
+            .toolbar span {{ color: white; font-size: 14px; }}
+            #pdf-container {{
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+                gap: 20px;
+            }}
+            .page-wrapper {{
+                background: white;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                position: relative;
+            }}
+            .page-number {{
+                position: absolute;
+                bottom: -25px;
+                left: 50%;
+                transform: translateX(-50%);
+                color: #ccc;
+                font-size: 12px;
+            }}
+            canvas {{ display: block; }}
+        </style>
+    </head>
+    <body>
+        <div class="toolbar">
+            <button onclick="zoomOut()">➖</button>
+            <span id="zoom-level">100%</span>
+            <button onclick="zoomIn()">➕</button>
+            <span style="margin-left: 20px;">Tổng: <span id="page-count">0</span> trang</span>
+        </div>
+        <div id="pdf-container"></div>
+        
+        <script>
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            
+            let pdfDoc = null;
+            let scale = 1.0;
+            const pdfData = atob("{base64_pdf}");
+            
+            async function renderPDF() {{
+                const loadingTask = pdfjsLib.getDocument({{data: pdfData}});
+                pdfDoc = await loadingTask.promise;
+                document.getElementById('page-count').textContent = pdfDoc.numPages;
+                renderAllPages();
+            }}
+            
+            async function renderAllPages() {{
+                const container = document.getElementById('pdf-container');
+                container.innerHTML = '';
+                
+                for (let i = 1; i <= pdfDoc.numPages; i++) {{
+                    const page = await pdfDoc.getPage(i);
+                    const viewport = page.getViewport({{ scale: scale }});
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'page-wrapper';
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    
+                    const pageNum = document.createElement('div');
+                    pageNum.className = 'page-number';
+                    pageNum.textContent = 'Trang ' + i;
+                    
+                    wrapper.appendChild(canvas);
+                    wrapper.appendChild(pageNum);
+                    container.appendChild(wrapper);
+                    
+                    const ctx = canvas.getContext('2d');
+                    await page.render({{ canvasContext: ctx, viewport: viewport }}).promise;
+                }}
+            }}
+            
+            function zoomIn() {{
+                scale = Math.min(scale + 0.25, 3.0);
+                document.getElementById('zoom-level').textContent = Math.round(scale * 100) + '%';
+                renderAllPages();
+            }}
+            
+            function zoomOut() {{
+                scale = Math.max(scale - 0.25, 0.5);
+                document.getElementById('zoom-level').textContent = Math.round(scale * 100) + '%';
+                renderAllPages();
+            }}
+            
+            renderPDF();
+        </script>
+    </body>
+    </html>
+    '''
+    st.components.v1.html(pdfjs_html, height=800, scrolling=True)
 
 def display_preview(doc: Document):
-    # temp_docx = TEMP_DIR / f"preview_{uuid.uuid4()}.docx"
-    # temp_pdf = TEMP_DIR / f"preview_{uuid.uuid4()}.pdf"
+    temp_docx = TEMP_DIR / f"preview_{uuid.uuid4()}.docx"
+    temp_pdf = TEMP_DIR / f"preview_{uuid.uuid4()}.pdf"
     try:
-        # NOTE: Cloud PDF conversion often triggers browser security blocks (data: URI / Mixed Content).
-        # Switching to pure HTML preview for stability.
+        doc.save(str(temp_docx))
         
-        # doc.save(str(temp_docx))
-        # if CONVERTAPI_SECRET:
-        #     with st.spinner("🔄 Đang tạo PDF Preview..."):
-        #         result_pdf = convert_docx_to_pdf_cloud(temp_docx, temp_pdf)
-        #         if result_pdf and result_pdf.exists():
-        #             st.success("✅ PDF Preview sẵn sàng!")
-        #             display_pdf_in_iframe(temp_pdf)
-        #             return
+        # Thử convert sang PDF để xem chính xác số trang
+        if CONVERTAPI_SECRET:
+            with st.spinner("🔄 Đang tạo PDF Preview..."):
+                result_pdf = convert_docx_to_pdf_cloud(temp_docx, temp_pdf)
+                if result_pdf and Path(result_pdf).exists():
+                    st.success("✅ PDF Preview sẵn sàng!")
+                    display_pdf_with_pdfjs(temp_pdf)
+                    return
         
-        st.info("📄 Hiển thị HTML Preview (Nhanh & Ổn định)")
+        # Fallback to HTML nếu không có API key hoặc convert thất bại
+        st.info("📄 Hiển thị HTML Preview")
         html_content = docx_to_html(doc)
         st.components.v1.html(html_content, height=800, scrolling=True)
         
     except Exception as e:
         st.error(f"Lỗi Preview: {e}")
-    # finally:
-    #     try:
-    #         if temp_docx.exists(): temp_docx.unlink()
-    #         if temp_pdf.exists(): temp_pdf.unlink()
-    #     except: pass
+    finally:
+        try:
+            if temp_docx.exists(): temp_docx.unlink()
+            if temp_pdf.exists(): temp_pdf.unlink()
+        except: pass
 
 # ============================================================================
 # MAIN CONTENT
