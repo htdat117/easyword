@@ -464,10 +464,17 @@ st.markdown("""
 # CUSTOM HEADER (Like HTML)
 # ============================================================================
 import base64
+import os
 
-# Encode logo image
-with open("logo.jpg", "rb") as img_file:
-    logo_base64 = base64.b64encode(img_file.read()).decode()
+# Encode logo image (with fallback for cloud deployment)
+logo_base64 = ""
+logo_path = Path(__file__).parent / "logo.jpg"
+if logo_path.exists():
+    try:
+        with open(logo_path, "rb") as img_file:
+            logo_base64 = base64.b64encode(img_file.read()).decode()
+    except:
+        pass
 
 st.markdown(f"""
 <div class="custom-header">
