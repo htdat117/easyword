@@ -681,28 +681,6 @@ with tab1:
     })();
     </script>
     """, height=0)
-                });
-            });
-            
-            // Center the tabs
-            const tabLists = window.parent.document.querySelectorAll('[data-baseweb="tab-list"]');
-            tabLists.forEach(tabList => {
-                tabList.style.justifyContent = 'center';
-                tabList.style.gap = '15px';
-            });
-        }
-        
-        // Run after a short delay to ensure DOM is ready
-        setTimeout(customizeUploader, 500);
-        setTimeout(customizeUploader, 1500);
-        setTimeout(customizeUploader, 3000);
-        
-        // Also observe for changes
-        const observer = new MutationObserver(customizeUploader);
-        observer.observe(window.parent.document.body, { childList: true, subtree: true });
-    })();
-    </script>
-    """, height=0)
     
     if uploaded_file:
         st.success(f"✅ Đã chọn: **{uploaded_file.name}**")
