@@ -4,10 +4,9 @@ from pathlib import Path
 import logging
 import sys
 import base64
-import os
 
 # ============================================================================
-# CẤU HÌNH STREAMLIT
+# PAGE CONFIG
 # ============================================================================
 st.set_page_config(
     page_title="EasyWord - Tạo Tài Liệu Word Chuyên Nghiệp",
@@ -16,15 +15,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(level=logging.INFO)
 
-# Fix path
 current_dir = Path(__file__).parent
 if str(current_dir) not in sys.path:
     sys.path.append(str(current_dir))
 
-# Import app modules
 try:
     from docx import Document
     from app.services.report_formatter import format_uploaded_stream, docx_to_html
@@ -34,105 +30,422 @@ except Exception as e:
     st.stop()
 
 # ============================================================================
-# CSS INJECTION
+# CSS - EXACT MATCH WITH TEST.HTML
 # ============================================================================
 st.markdown('<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">', unsafe_allow_html=True)
 st.markdown('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">', unsafe_allow_html=True)
 
 css = """
 <style>
-* { font-family: 'Inter', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
-body { background-color: #F9FAFB; color: #1F2937; line-height: 1.6; }
+:root {
+    --primary-color: #2563EB;
+    --primary-dark: #1D4ED8;
+    --secondary-color: #F3F4F6;
+    --text-dark: #1F2937;
+    --text-light: #6B7280;
+    --white: #FFFFFF;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: #F9FAFB;
+    color: var(--text-dark);
+    line-height: 1.6;
+}
 
 /* Hide Streamlit defaults */
 #MainMenu, footer, header[data-testid="stHeader"], .stDeployButton { display: none !important; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
 
-/* Custom Header */
-.custom-header { background-color: #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 0 20px; }
-.nav-wrapper { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 70px; }
-.logo { font-size: 1.5rem; font-weight: 700; color: #2563EB; display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.auth-buttons a { text-decoration: none; font-weight: 500; }
-.btn-login { color: #1F2937; margin-right: 15px; }
-.btn-signup { background-color: #2563EB; color: #FFFFFF !important; padding: 8px 20px; border-radius: 6px; }
+/* Header */
+.site-header {
+    background-color: var(--white);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
 
-/* Apply gradient to entire Streamlit app background */
-.stApp { background: linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 50%, #FFFFFF 50%) !important; }
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.nav-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 70px;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.auth-buttons .btn {
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-login {
+    color: var(--text-dark);
+    margin-right: 10px;
+}
+
+.btn-signup {
+    background-color: var(--primary-color);
+    color: var(--white) !important;
+}
+
+.btn-signup:hover {
+    background-color: var(--primary-dark);
+}
 
 /* Hero Section */
-.hero-full { background: transparent; padding: 60px 20px 30px; text-align: center; }
-.hero-title { font-size: 2.8rem; color: #111827; margin-bottom: 16px; line-height: 1.2; font-weight: 700; }
-.hero-desc { font-size: 1.1rem; color: #6B7280; margin-bottom: 30px; max-width: 600px; margin-left: auto; margin-right: auto; }
+.hero {
+    text-align: center;
+    padding: 80px 0 60px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%);
+}
 
-/* Tool Box - centered card */
-.tool-box { background: #FFFFFF; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 30px; max-width: 700px; margin: 0 auto; border: 1px solid #E5E7EB; }
+.hero h1 {
+    font-size: 3rem;
+    color: #111827;
+    margin-bottom: 16px;
+    line-height: 1.2;
+    font-weight: 700;
+}
 
-/* Streamlit Tabs - match TEST.HTML */
-[data-testid="stTabs"] [data-baseweb="tab-list"] { justify-content: center; gap: 0; border-bottom: none !important; background: transparent !important; }
-[data-testid="stTabs"] button[data-baseweb="tab"] { background: transparent !important; border: none !important; border-bottom: 2px solid transparent !important; color: #6B7280 !important; font-weight: 600 !important; padding: 12px 24px !important; margin: 0 !important; border-radius: 0 !important; }
-[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] { color: #2563EB !important; border-bottom: 2px solid #2563EB !important; }
-[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #2563EB !important; background: transparent !important; }
-[data-testid="stTabs"] [data-baseweb="tab-highlight"], [data-testid="stTabs"] [data-baseweb="tab-border"] { display: none !important; }
+.hero p {
+    font-size: 1.125rem;
+    color: var(--text-light);
+    margin-bottom: 40px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
 
-/* File Uploader - match TEST.HTML upload-area */
-[data-testid="stFileUploader"] { border: 2px dashed #D1D5DB !important; border-radius: 12px !important; padding: 50px 20px !important; background-color: #F9FAFB !important; text-align: center !important; transition: all 0.3s; }
-[data-testid="stFileUploader"]:hover { border-color: #2563EB !important; background-color: #EFF6FF !important; }
+/* Tool Box */
+.tool-box {
+    background: var(--white);
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    padding: 30px;
+    max-width: 800px;
+    margin: 0 auto;
+    border: 1px solid #E5E7EB;
+}
+
+/* Streamlit Tabs Override */
+[data-testid="stTabs"] [data-baseweb="tab-list"] {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    border-bottom: none !important;
+    background: transparent !important;
+}
+
+[data-testid="stTabs"] button[data-baseweb="tab"] {
+    padding: 10px 20px !important;
+    border: none !important;
+    background: transparent !important;
+    font-weight: 600 !important;
+    color: var(--text-light) !important;
+    cursor: pointer !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+}
+
+[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
+    color: var(--primary-color) !important;
+    border-bottom-color: var(--primary-color) !important;
+}
+
+[data-testid="stTabs"] button[data-baseweb="tab"]:hover {
+    color: var(--primary-color) !important;
+    background: transparent !important;
+}
+
+[data-testid="stTabs"] [data-baseweb="tab-highlight"],
+[data-testid="stTabs"] [data-baseweb="tab-border"] {
+    display: none !important;
+}
+
+/* File Uploader Override - Match .upload-area */
+[data-testid="stFileUploader"] {
+    border: 2px dashed #D1D5DB !important;
+    border-radius: 12px !important;
+    padding: 50px 20px !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    transition: border-color 0.3s !important;
+    background-color: #F9FAFB !important;
+}
+
+[data-testid="stFileUploader"]:hover {
+    border-color: var(--primary-color) !important;
+    background-color: #EFF6FF !important;
+}
+
 [data-testid="stFileUploader"] > label { display: none !important; }
-[data-testid="stFileUploader"] section { background: transparent !important; border: none !important; }
-[data-testid="stFileUploader"] section > div { flex-direction: column !important; align-items: center !important; }
-[data-testid="stFileUploader"] section > div::before { content: "\\f0ee"; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 3rem; color: #2563EB; display: block; margin-bottom: 15px; }
-[data-testid="stFileUploader"] section > div > span { font-size: 1.1rem !important; font-weight: 600 !important; color: #1F2937 !important; }
-[data-testid="stFileUploader"] section small { color: #9CA3AF !important; font-size: 0.9rem !important; margin-top: 5px !important; }
-[data-testid="stFileUploader"] button { background: #E5E7EB !important; color: #374151 !important; border: 1px solid #D1D5DB !important; padding: 8px 20px !important; border-radius: 8px !important; font-weight: 500 !important; margin-top: 15px !important; }
-[data-testid="stFileUploader"] button:hover { background: #D1D5DB !important; }
 
-/* Primary Button - match TEST.HTML btn-action */
-div.stButton > button[kind="primary"], div.stButton > button { width: 100% !important; padding: 15px 20px !important; background-color: #2563EB !important; color: #FFFFFF !important; border: none !important; border-radius: 8px !important; font-size: 1rem !important; font-weight: 600 !important; margin-top: 20px !important; cursor: pointer !important; }
-div.stButton > button:hover { background-color: #1D4ED8 !important; }
+[data-testid="stFileUploader"] section {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
 
-/* Expander */
-[data-testid="stExpander"] { border: 1px solid #E5E7EB !important; border-radius: 8px !important; margin-top: 15px !important; background: #F9FAFB !important; }
-[data-testid="stExpander"] summary { font-weight: 500 !important; }
+[data-testid="stFileUploader"] section > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+}
+
+/* Icon for uploader */
+[data-testid="stFileUploader"] section > div::before {
+    content: "\\f0ee";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+
+[data-testid="stFileUploader"] section > div > span {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    color: #111827 !important;
+}
+
+[data-testid="stFileUploader"] section small {
+    font-size: 0.9rem !important;
+    color: #9CA3AF !important;
+    margin-top: 5px !important;
+}
+
+[data-testid="stFileUploader"] button {
+    background: #E5E7EB !important;
+    color: #374151 !important;
+    margin-top: 15px !important;
+    font-size: 0.9rem !important;
+    padding: 8px 16px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+}
+
+[data-testid="stFileUploader"] button:hover {
+    background: #D1D5DB !important;
+}
+
+/* Action Button - Match .btn-action */
+div.stButton > button[kind="primary"],
+div.stButton > button {
+    display: block !important;
+    width: 100% !important;
+    padding: 15px !important;
+    background-color: var(--primary-color) !important;
+    color: var(--white) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    margin-top: 20px !important;
+    cursor: pointer !important;
+    transition: background 0.3s !important;
+}
+
+div.stButton > button:hover {
+    background-color: var(--primary-dark) !important;
+}
 
 /* Features Section */
-.features-section { padding: 80px 20px; background-color: #FFFFFF; }
-.features-container { max-width: 1200px; margin: 0 auto; }
-.section-title { text-align: center; margin-bottom: 60px; }
-.section-title h2 { font-size: 2.25rem; margin-bottom: 10px; font-weight: 700; color: #1F2937; }
-.section-title p { color: #6B7280; }
-.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
-.feature-card { padding: 30px; border-radius: 12px; background: #F8FAFC; transition: all 0.3s; border: 1px solid transparent; }
-.feature-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); border-color: #E2E8F0; background: #FFFFFF; }
-.icon-box { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 1.5rem; }
+.features {
+    padding: 80px 0;
+    background-color: var(--white);
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.section-title h2 {
+    font-size: 2.25rem;
+    margin-bottom: 10px;
+    font-weight: 700;
+    color: #1F2937;
+}
+
+.section-title p {
+    color: var(--text-light);
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.feature-card {
+    padding: 30px;
+    border-radius: 12px;
+    background: #F8FAFC;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 1px solid transparent;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    border-color: #E2E8F0;
+    background: var(--white);
+}
+
+.icon-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
 .bg-blue { background: #DBEAFE; color: #2563EB; }
 .bg-green { background: #D1FAE5; color: #059669; }
 .bg-purple { background: #EDE9FE; color: #7C3AED; }
 .bg-orange { background: #FFEDD5; color: #EA580C; }
 .bg-red { background: #FEE2E2; color: #DC2626; }
 .bg-teal { background: #CCFBF1; color: #0D9488; }
-.feature-card h3 { font-size: 1.25rem; margin-bottom: 10px; font-weight: 600; color: #1F2937; }
-.feature-card p { color: #6B7280; font-size: 0.95rem; }
+
+.feature-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.feature-card p {
+    color: var(--text-light);
+    font-size: 0.95rem;
+}
 
 /* CTA Section */
-.cta-section { padding: 80px 20px; background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%); color: #FFFFFF; text-align: center; }
-.cta-section h2 { font-size: 2.5rem; margin-bottom: 20px; font-weight: 700; }
-.cta-section p { font-size: 1.1rem; opacity: 0.9; margin-bottom: 20px; }
-.btn-white { display: inline-block; background: #FFFFFF; color: #2563EB !important; padding: 15px 40px; border-radius: 8px; font-weight: 700; text-decoration: none; }
-.btn-white:hover { transform: scale(1.05); }
+.cta-section {
+    padding: 80px 0;
+    background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
+    color: var(--white);
+    text-align: center;
+}
+
+.cta-content h2 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    font-weight: 700;
+}
+
+.cta-content p {
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+    opacity: 0.9;
+}
+
+.btn-white {
+    display: inline-block;
+    background: var(--white);
+    color: var(--primary-color) !important;
+    padding: 15px 40px;
+    border-radius: 8px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s;
+}
+
+.btn-white:hover {
+    transform: scale(1.05);
+}
 
 /* Footer */
-.custom-footer { background-color: #111827; color: #D1D5DB; padding: 60px 20px 20px; }
-.footer-container { max-width: 1200px; margin: 0 auto; }
-.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
-.footer-col h4 { color: #FFFFFF; margin-bottom: 20px; font-weight: 600; }
-.footer-col a { color: #9CA3AF; text-decoration: none; display: block; margin-bottom: 10px; }
-.footer-col a:hover { color: #FFFFFF; }
-.copyright { text-align: center; border-top: 1px solid #374151; padding-top: 20px; font-size: 0.9rem; }
+.site-footer {
+    background-color: #111827;
+    color: #D1D5DB;
+    padding: 60px 0 20px;
+}
 
+.footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
+}
+
+.footer-col h4 {
+    color: var(--white);
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.footer-col ul {
+    list-style: none;
+}
+
+.footer-col ul li {
+    margin-bottom: 10px;
+}
+
+.footer-col ul li a {
+    color: #9CA3AF;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.footer-col ul li a:hover {
+    color: var(--white);
+}
+
+.copyright {
+    text-align: center;
+    border-top: 1px solid #374151;
+    padding-top: 20px;
+    font-size: 0.9rem;
+}
+
+/* Expander Override */
+[data-testid="stExpander"] {
+    border: 1px solid #E5E7EB !important;
+    border-radius: 8px !important;
+    margin-top: 15px !important;
+    background: #F9FAFB !important;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-    .hero-title { font-size: 2rem; }
-    .feature-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 2rem; }
     .footer-grid { grid-template-columns: 1fr; text-align: center; }
+    .nav-wrapper { flex-direction: column; height: auto; padding: 15px 0; }
+    .logo { margin-bottom: 15px; }
 }
 </style>
 """
@@ -209,32 +522,36 @@ def process_file(file_bytes, filename):
         return False
 
 # ============================================================================
-# 1. HEADER
+# LAYOUT - EXACT MATCH WITH TEST.HTML
 # ============================================================================
+
+# 1. HEADER
 st.markdown('''
-<header class="custom-header">
-    <div class="nav-wrapper">
-        <a href="#" class="logo"><i class="fa-solid fa-file-word"></i> EasyWord</a>
+<header class="site-header">
+    <div class="container nav-wrapper">
+        <a href="#" class="logo">
+            <i class="fa-solid fa-file-word"></i> EasyWord
+        </a>
         <div class="auth-buttons">
-            <a href="#" class="btn-login">Đăng nhập</a>
-            <a href="#" class="btn-signup">Đăng ký ngay</a>
+            <a href="#" class="btn btn-login">Đăng nhập</a>
+            <a href="#" class="btn btn-signup">Đăng ký ngay</a>
         </div>
     </div>
 </header>
 ''', unsafe_allow_html=True)
 
-# ============================================================================
-# 2. HERO SECTION WITH TOOL BOX
-# ============================================================================
+# 2. HERO SECTION - tool-box is INSIDE hero
 st.markdown('''
-<div class="hero-full">
-    <h1 class="hero-title">Tạo Tài Liệu Word Chuyên Nghiệp<br>Trong Tích Tắc</h1>
-    <p class="hero-desc">Upload file định dạng thô của bạn và để EasyWord xử lý mọi thứ với công nghệ AI tiên tiến. Tiết kiệm 90% thời gian định dạng.</p>
-</div>
+<section class="hero">
+    <div class="container">
+        <h1>Tạo Tài Liệu Word Chuyên Nghiệp<br>Trong Tích Tắc</h1>
+        <p>Upload file định dạng thô của bạn và để EasyWord xử lý mọi thứ với công nghệ AI tiên tiến. Tiết kiệm 90% thời gian định dạng.</p>
+    </div>
+</section>
 ''', unsafe_allow_html=True)
 
-# Tool Box with actual Streamlit widgets
-st.markdown('<div style="max-width:700px;margin:-60px auto 40px;background:#fff;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.05);padding:30px;border:1px solid #E5E7EB;position:relative;z-index:10;">', unsafe_allow_html=True)
+# 3. TOOL BOX - Positioned to overlap hero
+st.markdown('<div class="container"><div class="tool-box" style="margin-top: -30px; position: relative; z-index: 10;">', unsafe_allow_html=True)
 
 tab1, tab2 = st.tabs(["☁️ Upload File", "⚡ Test Nhanh"])
 
@@ -270,7 +587,7 @@ with tab1:
             st.warning("⚠️ Vui lòng chọn file!")
 
 with tab2:
-    st.info("💡 Dùng file mẫu để kiểm tra nhanh")
+    st.info("💡 Dùng file mẫu có sẵn để kiểm tra nhanh tính năng")
     if st.button("🚀 Chạy Test Ngay", type="primary", key="btn_test", use_container_width=True):
         test_path = Path("test.docx")
         if test_path.exists():
@@ -282,13 +599,11 @@ with tab2:
         else:
             st.error("❌ Không tìm thấy test.docx")
 
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div></div>', unsafe_allow_html=True)
 
-# ============================================================================
-# 3. RESULTS
-# ============================================================================
+# 4. RESULTS
 if "result_stream" in st.session_state:
-    st.markdown('<div style="max-width:900px;margin:0 auto 40px;padding:0 20px;">', unsafe_allow_html=True)
+    st.markdown('<div class="container" style="margin-top: 40px;">', unsafe_allow_html=True)
     st.markdown("### 📥 Kết quả xử lý")
     c1, c2 = st.columns([3, 1])
     with c1:
@@ -302,88 +617,99 @@ if "result_stream" in st.session_state:
             display_preview(st.session_state["result_doc"])
     st.markdown('</div>', unsafe_allow_html=True)
 
-# ============================================================================
-# 4. FEATURES
-# ============================================================================
+# 5. FEATURES SECTION
 st.markdown('''
-<section class="features-section">
-    <div class="features-container">
-        <div class="section-title">
-            <h2>EasyWord Làm Được Gì?</h2>
-            <p>Khám phá các tính năng mạnh mẽ giúp công việc của bạn hiệu quả hơn</p>
+<section class="features">
+    <div class="section-title">
+        <h2>EasyWord Làm Được Gì?</h2>
+        <p>Khám phá các tính năng mạnh mẽ giúp công việc của bạn hiệu quả hơn</p>
+    </div>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <div class="icon-box bg-blue"><i class="fa-solid fa-file-lines"></i></div>
+            <h3>Tự Động Định Dạng</h3>
+            <p>AI tự động nhận diện và áp dụng định dạng chuẩn (Heading, Paragraph, List) cho tài liệu của bạn ngay lập tức.</p>
         </div>
-        <div class="feature-grid">
-            <div class="feature-card">
-                <div class="icon-box bg-blue"><i class="fa-solid fa-file-lines"></i></div>
-                <h3>Tự Động Định Dạng</h3>
-                <p>AI tự động nhận diện và áp dụng định dạng chuẩn (Heading, Paragraph, List) cho tài liệu.</p>
-            </div>
-            <div class="feature-card">
-                <div class="icon-box bg-green"><i class="fa-solid fa-check-double"></i></div>
-                <h3>Kiểm Tra Chính Tả</h3>
-                <p>Phát hiện và sửa lỗi chính tả, ngữ pháp tự động với độ chính xác cao cho Tiếng Việt.</p>
-            </div>
-            <div class="feature-card">
-                <div class="icon-box bg-purple"><i class="fa-solid fa-palette"></i></div>
-                <h3>Template Đa Dạng</h3>
-                <p>Hàng trăm mẫu tài liệu chuyên nghiệp cho mọi mục đích: Báo cáo, CV, Đơn từ.</p>
-            </div>
-            <div class="feature-card">
-                <div class="icon-box bg-orange"><i class="fa-solid fa-sliders"></i></div>
-                <h3>Tùy Chỉnh Linh Hoạt</h3>
-                <p>Điều chỉnh font chữ, màu sắc, căn lề chỉ với vài cú click chuột.</p>
-            </div>
-            <div class="feature-card">
-                <div class="icon-box bg-red"><i class="fa-solid fa-bolt"></i></div>
-                <h3>Xử Lý Siêu Nhanh</h3>
-                <p>Xử lý tài liệu trong vài giây dù file lớn hay phức tạp.</p>
-            </div>
-            <div class="feature-card">
-                <div class="icon-box bg-teal"><i class="fa-solid fa-shield-halved"></i></div>
-                <h3>Bảo Mật Tuyệt Đối</h3>
-                <p>Mọi tài liệu được mã hóa end-to-end. File tự hủy sau 24h.</p>
-            </div>
+        <div class="feature-card">
+            <div class="icon-box bg-green"><i class="fa-solid fa-check-double"></i></div>
+            <h3>Kiểm Tra Chính Tả</h3>
+            <p>Phát hiện và sửa lỗi chính tả, ngữ pháp tự động với độ chính xác cao dành cho Tiếng Việt.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon-box bg-purple"><i class="fa-solid fa-palette"></i></div>
+            <h3>Template Đa Dạng</h3>
+            <p>Hàng trăm mẫu tài liệu chuyên nghiệp sẵn có cho mọi mục đích: Báo cáo, CV, Đơn từ, Hợp đồng.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon-box bg-orange"><i class="fa-solid fa-sliders"></i></div>
+            <h3>Tùy Chỉnh Linh Hoạt</h3>
+            <p>Điều chỉnh mọi chi tiết theo ý muốn: font chữ, màu sắc, căn lề chỉ với vài cú click chuột.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon-box bg-red"><i class="fa-solid fa-bolt"></i></div>
+            <h3>Xử Lý Siêu Nhanh</h3>
+            <p>Xử lý tài liệu trong vài giây dù file lớn hay phức tạp. Không còn chờ đợi.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon-box bg-teal"><i class="fa-solid fa-shield-halved"></i></div>
+            <h3>Bảo Mật Tuyệt Đối</h3>
+            <p>Mọi tài liệu được mã hóa end-to-end, đảm bảo an toàn riêng tư. File tự hủy sau 24h.</p>
         </div>
     </div>
 </section>
 ''', unsafe_allow_html=True)
 
-# ============================================================================
-# 5. CTA
-# ============================================================================
+# 6. CTA SECTION
 st.markdown('''
 <section class="cta-section">
-    <h2>Sẵn Sàng Bắt Đầu?</h2>
-    <p>Tham gia hàng nghìn người dùng đang tin dùng EasyWord mỗi ngày.</p>
-    <a href="#" class="btn-white">Đăng Ký Miễn Phí Ngay</a>
+    <div class="container cta-content">
+        <h2>Sẵn Sàng Bắt Đầu?</h2>
+        <p>Tham gia hàng nghìn người dùng đang tin dùng EasyWord mỗi ngày để tối ưu hóa công việc.</p>
+        <a href="#" class="btn-white">Đăng Ký Miễn Phí Ngay</a>
+    </div>
 </section>
 ''', unsafe_allow_html=True)
 
-# ============================================================================
-# 6. FOOTER
-# ============================================================================
+# 7. FOOTER
 st.markdown('''
-<footer class="custom-footer">
-    <div class="footer-container">
+<footer class="site-footer">
+    <div class="container">
         <div class="footer-grid">
             <div class="footer-col">
-                <a href="#" class="logo" style="color:#fff;margin-bottom:20px;display:inline-block"><i class="fa-solid fa-file-word"></i> EasyWord</a>
-                <p style="color:#9CA3AF;font-size:0.9rem">Giải pháp tạo tài liệu Word thông minh hàng đầu Việt Nam.</p>
+                <a href="#" class="logo" style="color: #fff; margin-bottom: 20px; display: inline-block;">
+                    <i class="fa-solid fa-file-word"></i> EasyWord
+                </a>
+                <p style="font-size: 0.9rem; color: #9CA3AF;">Giải pháp tạo tài liệu Word thông minh và chuyên nghiệp hàng đầu Việt Nam.</p>
             </div>
             <div class="footer-col">
                 <h4>Sản phẩm</h4>
-                <a href="#">Tính năng</a><a href="#">Bảng giá</a><a href="#">Templates</a><a href="#">API</a>
+                <ul>
+                    <li><a href="#">Tính năng</a></li>
+                    <li><a href="#">Bảng giá</a></li>
+                    <li><a href="#">Templates</a></li>
+                    <li><a href="#">API</a></li>
+                </ul>
             </div>
             <div class="footer-col">
                 <h4>Hỗ trợ</h4>
-                <a href="#">Trung tâm trợ giúp</a><a href="#">Liên hệ</a><a href="#">Cộng đồng</a>
+                <ul>
+                    <li><a href="#">Trung tâm trợ giúp</a></li>
+                    <li><a href="#">Liên hệ</a></li>
+                    <li><a href="#">Cộng đồng</a></li>
+                </ul>
             </div>
             <div class="footer-col">
                 <h4>Pháp lý</h4>
-                <a href="#">Điều khoản</a><a href="#">Bảo mật</a><a href="#">Cookie Policy</a>
+                <ul>
+                    <li><a href="#">Điều khoản</a></li>
+                    <li><a href="#">Bảo mật</a></li>
+                    <li><a href="#">Cookie Policy</a></li>
+                </ul>
             </div>
         </div>
-        <div class="copyright">© 2026 EasyWord. All rights reserved.</div>
+        <div class="copyright">
+            © 2026 EasyWord. All rights reserved.
+        </div>
     </div>
 </footer>
 ''', unsafe_allow_html=True)
