@@ -44,267 +44,233 @@ except Exception as e:
 st.markdown("""
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 <style>
-    :root {
-        --primary-color: #2563EB;
-        --primary-dark: #1D4ED8;
-        --secondary-color: #F3F4F6;
-        --text-dark: #1F2937;
-        --text-light: #6B7280;
-        --white: #FFFFFF;
-        --accent: #F59E0B;
-    }
-
-    * {
-        font-family: 'Inter', sans-serif;
-    }
-
-    body {
-        background-color: #F9FAFB;
-        color: var(--text-dark);
-        line-height: 1.6;
-    }
-
-    /* Hide Streamlit Branding */
-    #MainMenu, footer, header[data-testid="stHeader"], .stDeployButton {
-        display: none !important;
-    }
-    
-    .block-container {
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-        max-width: 100% !important;
-    }
-
-    /* --- Header / Navigation --- */
-    .custom-header {
-        background-color: var(--white);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        padding: 0;
-    }
-
-    .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 20px;
-    }
-
-    .nav-wrapper {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        height: 70px;
-    }
-
-    .logo {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--primary-color);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        text-decoration: none;
-    }
-
-    /* Auth Buttons */
-    .btn-login {
-        color: var(--text-dark);
-        margin-right: 15px;
-        text-decoration: none;
-        font-weight: 500;
-        padding: 8px 16px;
-        border-radius: 6px;
-    }
-
-    .btn-signup {
-        background-color: var(--primary-color);
-        color: var(--white);
-        text-decoration: none;
-        padding: 8px 20px;
-        border-radius: 6px;
-        font-weight: 500;
-        transition: background 0.3s;
-    }
-    .btn-signup:hover { background: var(--primary-dark); color: white; }
-
-    /* --- Hero Section & Tool Area --- */
-    .hero {
-        text-align: center;
-        padding: 80px 0 60px;
-        background: linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%);
-    }
-
-    .hero-title {
-        font-size: 3rem;
-        color: #111827;
-        margin-bottom: 16px;
-        line-height: 1.2;
-        font-weight: 700;
-    }
-
-    .hero-desc {
-        font-size: 1.125rem;
-        color: var(--text-light);
-        margin-bottom: 40px;
-        max-width: 600px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    /* Tool Box Wrapper */
-    .tool-box-wrapper {
-        background: var(--white);
-        border-radius: 16px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-        padding: 30px;
-        max-width: 800px;
-        margin: 0 auto;
-        border: 1px solid #E5E7EB;
-    }
-
-    /* Streamlit File Uploader Customization */
-    [data-testid="stFileUploader"] {
-        border: 2px dashed #D1D5DB;
-        border-radius: 12px;
-        padding: 2rem;
-        background-color: #F9FAFB;
-        transition: all 0.3s;
-    }
-    
-    [data-testid="stFileUploader"]:hover {
-        border-color: var(--primary-color);
-        background-color: #EFF6FF;
-    }
-    
-    [data-testid="stFileUploader"] section {
-        background-color: transparent !important;
-    }
-    
-    /* Process Button */
-    div.stButton > button {
-        display: block;
-        width: 100%;
-        padding: 0.75rem 1rem;
-        background-color: var(--primary-color);
-        color: var(--white);
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 600;
-        margin-top: 10px;
-        cursor: pointer;
-        transition: background 0.3s;
-    }
-    
-    div.stButton > button:hover {
-        background-color: var(--primary-dark);
-        color: white;
-        border-color: var(--primary-dark);
-    }
-    
-    div.stButton > button:active {
-        color: white;
-    }
-
-    /* --- Features Section --- */
-    .features {
-        padding: 80px 0;
-        background-color: var(--white);
-    }
-
-    .feature-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 30px;
-    }
-
-    .feature-card {
-        padding: 30px;
-        border-radius: 12px;
-        background: #F8FAFC;
-        transition: transform 0.3s, box-shadow 0.3s;
-        border: 1px solid transparent;
-    }
-
-    .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-        border-color: #E2E8F0;
-        background: var(--white);
-    }
-
-    .icon-box {
-        width: 50px;
-        height: 50px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 20px;
-        font-size: 1.5rem;
-    }
-
-    /* Feature Colors */
-    .bg-blue { background: #DBEAFE; color: #2563EB; }
-    .bg-green { background: #D1FAE5; color: #059669; }
-    .bg-purple { background: #EDE9FE; color: #7C3AED; }
-    .bg-orange { background: #FFEDD5; color: #EA580C; }
-    .bg-red { background: #FEE2E2; color: #DC2626; }
-    .bg-teal { background: #CCFBF1; color: #0D9488; }
-    
-    .feature-h3 { font-size: 1.25rem; margin-bottom: 10px; font-weight: 600; color: #1F2937; }
-    .feature-p { color: var(--text-light); font-size: 0.95rem; }
-
-    /* --- CTA Section --- */
-    .cta-section {
-        padding: 80px 0;
-        background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
-        color: var(--white);
-        text-align: center;
-    }
-
-    .btn-white {
-        display: inline-block;
-        background: var(--white);
-        color: var(--primary-color) !important;
-        padding: 15px 40px;
-        border-radius: 8px;
-        font-weight: 700;
-        text-decoration: none;
-        margin-top: 20px;
-        transition: transform 0.2s;
-    }
-    .btn-white:hover { transform: scale(1.05); }
-
-    /* --- Footer --- */
-    .custom-footer {
-        background-color: #111827;
-        color: #D1D5DB;
-        padding: 60px 0 20px;
-        margin-top: -100px; /* Adjust for Streamlit spacing if needed */
-    }
-
-    .footer-grid {
-        display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr;
-        gap: 40px;
-        margin-bottom: 40px;
-    }
-    
-    .footer-col h4 { color: white; margin-bottom: 20px; font-weight: 600; }
-    .footer-col a { color: #9CA3AF; text-decoration: none; display: block; margin-bottom: 10px; }
-    .footer-col a:hover { color: white; }
-    
-    @media (max-width: 768px) {
-        .footer-grid { grid-template-columns: 1fr; text-align: center; }
-        .hero-title { font-size: 2rem; }
-    }
+:root {
+    --primary-color: #2563EB;
+    --primary-dark: #1D4ED8;
+    --secondary-color: #F3F4F6;
+    --text-dark: #1F2937;
+    --text-light: #6B7280;
+    --white: #FFFFFF;
+    --accent: #F59E0B;
+}
+* {
+    font-family: 'Inter', sans-serif;
+}
+body {
+    background-color: #F9FAFB;
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+/* Hide Streamlit Branding */
+#MainMenu, footer, header[data-testid="stHeader"], .stDeployButton {
+    display: none !important;
+}
+.block-container {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    max-width: 100% !important;
+}
+/* --- Header / Navigation --- */
+.custom-header {
+    background-color: var(--white);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 0;
+}
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+.nav-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 70px;
+}
+.logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+/* Auth Buttons */
+.btn-login {
+    color: var(--text-dark);
+    margin-right: 15px;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 6px;
+}
+.btn-signup {
+    background-color: var(--primary-color);
+    color: var(--white);
+    text-decoration: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background 0.3s;
+}
+.btn-signup:hover { background: var(--primary-dark); color: white; }
+/* --- Hero Section & Tool Area --- */
+.hero {
+    text-align: center;
+    padding: 80px 0 60px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%);
+}
+.hero-title {
+    font-size: 3rem;
+    color: #111827;
+    margin-bottom: 16px;
+    line-height: 1.2;
+    font-weight: 700;
+}
+.hero-desc {
+    font-size: 1.125rem;
+    color: var(--text-light);
+    margin-bottom: 40px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+/* Tool Box Wrapper */
+.tool-box-wrapper {
+    background: var(--white);
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    padding: 30px;
+    max-width: 800px;
+    margin: 0 auto;
+    border: 1px solid #E5E7EB;
+}
+/* Streamlit File Uploader Customization */
+[data-testid="stFileUploader"] {
+    border: 2px dashed #D1D5DB;
+    border-radius: 12px;
+    padding: 2rem;
+    background-color: #F9FAFB;
+    transition: all 0.3s;
+}
+[data-testid="stFileUploader"]:hover {
+    border-color: var(--primary-color);
+    background-color: #EFF6FF;
+}
+[data-testid="stFileUploader"] section {
+    background-color: transparent !important;
+}
+/* Process Button */
+div.stButton > button {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+div.stButton > button:hover {
+    background-color: var(--primary-dark);
+    color: white;
+    border-color: var(--primary-dark);
+}
+div.stButton > button:active {
+    color: white;
+}
+/* --- Features Section --- */
+.features {
+    padding: 80px 0;
+    background-color: var(--white);
+}
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+.feature-card {
+    padding: 30px;
+    border-radius: 12px;
+    background: #F8FAFC;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 1px solid transparent;
+}
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    border-color: #E2E8F0;
+    background: var(--white);
+}
+.icon-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+/* Feature Colors */
+.bg-blue { background: #DBEAFE; color: #2563EB; }
+.bg-green { background: #D1FAE5; color: #059669; }
+.bg-purple { background: #EDE9FE; color: #7C3AED; }
+.bg-orange { background: #FFEDD5; color: #EA580C; }
+.bg-red { background: #FEE2E2; color: #DC2626; }
+.bg-teal { background: #CCFBF1; color: #0D9488; }
+.feature-h3 { font-size: 1.25rem; margin-bottom: 10px; font-weight: 600; color: #1F2937; }
+.feature-p { color: var(--text-light); font-size: 0.95rem; }
+/* --- CTA Section --- */
+.cta-section {
+    padding: 80px 0;
+    background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
+    color: var(--white);
+    text-align: center;
+}
+.btn-white {
+    display: inline-block;
+    background: var(--white);
+    color: var(--primary-color) !important;
+    padding: 15px 40px;
+    border-radius: 8px;
+    font-weight: 700;
+    text-decoration: none;
+    margin-top: 20px;
+    transition: transform 0.2s;
+}
+.btn-white:hover { transform: scale(1.05); }
+/* --- Footer --- */
+.custom-footer {
+    background-color: #111827;
+    color: #D1D5DB;
+    padding: 60px 0 20px;
+    margin-top: -100px; /* Adjust for Streamlit spacing if needed */
+}
+.footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
+}
+.footer-col h4 { color: white; margin-bottom: 20px; font-weight: 600; }
+.footer-col a { color: #9CA3AF; text-decoration: none; display: block; margin-bottom: 10px; }
+.footer-col a:hover { color: white; }
+@media (max-width: 768px) {
+    .footer-grid { grid-template-columns: 1fr; text-align: center; }
+    .hero-title { font-size: 2rem; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -348,29 +314,28 @@ def display_pdf_with_pdfjs(pdf_path):
         base64_pdf = base64.b64encode(pdf_file.read()).decode('utf-8')
     
     pdfjs_html = f'''
-    <!DOCTYPE html><html><head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <style>body{{margin:0;background:#525659;}} canvas{{display:block;margin:20px auto;box-shadow:0 4px 12px rgba(0,0,0,0.3);}}</style>
-    </head><body><div id="pdf-container"></div>
-    <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        const pdfData = atob("{base64_pdf}");
-        pdfjsLib.getDocument({{data: pdfData}}).promise.then(pdf => {{
-            for (let i = 1; i <= pdf.numPages; i++) {{
-                pdf.getPage(i).then(page => {{
-                    const scale = 1.0;
-                    const viewport = page.getViewport({{scale}});
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    document.getElementById('pdf-container').appendChild(canvas);
-                    page.render({{canvasContext: context, viewport: viewport}});
-                }});
-            }}
-        }});
-    </script></body></html>
-    '''
+<!DOCTYPE html><html><head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>body{{margin:0;background:#525659;}} canvas{{display:block;margin:20px auto;box-shadow:0 4px 12px rgba(0,0,0,0.3);}}</style>
+</head><body><div id="pdf-container"></div>
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdfData = atob("{base64_pdf}");
+    pdfjsLib.getDocument({{data: pdfData}}).promise.then(pdf => {{
+        for (let i = 1; i <= pdf.numPages; i++) {{
+            pdf.getPage(i).then(page => {{
+                const scale = 1.0;
+                const viewport = page.getViewport({{scale}});
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                document.getElementById('pdf-container').appendChild(canvas);
+                page.render({{canvasContext: context, viewport: viewport}});
+            }});
+        }}
+    }});
+</script></body></html>'''
     st.components.v1.html(pdfjs_html, height=800, scrolling=True)
 
 def display_preview(doc: Document):
@@ -402,25 +367,25 @@ def display_preview(doc: Document):
 # 1. HEADER
 st.markdown("""
 <header class="custom-header">
-    <div class="container nav-wrapper">
-        <a href="#" class="logo">
-            <i class="fa-solid fa-file-word"></i> EasyWord
-        </a>
-        <div class="auth-buttons">
-            <a href="#" class="btn-login">Đăng nhập</a>
-            <a href="#" class="btn-signup">Đăng ký ngay</a>
-        </div>
-    </div>
+<div class="container nav-wrapper">
+<a href="#" class="logo">
+<i class="fa-solid fa-file-word"></i> EasyWord
+</a>
+<div class="auth-buttons">
+<a href="#" class="btn-login">Đăng nhập</a>
+<a href="#" class="btn-signup">Đăng ký ngay</a>
+</div>
+</div>
 </header>
 """, unsafe_allow_html=True)
 
 # 2. HERO
 st.markdown("""
 <section class="hero">
-    <div class="container">
-        <h1 class="hero-title">Tạo Tài Liệu Word Chuyên Nghiệp<br>Trong Tích Tắc</h1>
-        <p class="hero-desc">Upload file định dạng thô của bạn và để EasyWord xử lý mọi thứ với công nghệ AI tiên tiến. Tiết kiệm 90% thời gian định dạng.</p>
-    </div>
+<div class="container">
+<h1 class="hero-title">Tạo Tài Liệu Word Chuyên Nghiệp<br>Trong Tích Tắc</h1>
+<p class="hero-desc">Upload file định dạng thô của bạn và để EasyWord xử lý mọi thứ với công nghệ AI tiên tiến. Tiết kiệm 90% thời gian định dạng.</p>
+</div>
 </section>
 """, unsafe_allow_html=True)
 
@@ -515,93 +480,92 @@ if "result_stream" in st.session_state:
 # 5. FEATURES SECTION
 st.markdown("""
 <section class="features">
-    <div class="container">
-        <div style="text-align: center; margin-bottom: 60px;">
-            <h2 style="font-size: 2.25rem; margin-bottom: 10px; font-weight: 700; color: #1F2937;">EasyWord Làm Được Gì?</h2>
-            <p style="color: #6B7280;">Khám phá các tính năng mạnh mẽ giúp công việc của bạn hiệu quả hơn</p>
-        </div>
-
-        <div class="feature-grid">
-            <div class="feature-card">
-                <div class="icon-box bg-blue"><i class="fa-solid fa-file-lines"></i></div>
-                <div class="feature-h3">Tự Động Định Dạng</div>
-                <div class="feature-p">AI tự động nhận diện và áp dụng định dạng chuẩn (Heading, Paragraph, List) cho tài liệu ngay lập tức.</div>
-            </div>
-            <div class="feature-card">
-                <div class="icon-box bg-green"><i class="fa-solid fa-check-double"></i></div>
-                <div class="feature-h3">Kiểm Tra Chính Tả</div>
-                <div class="feature-p">Phát hiện và sửa lỗi chính tả, ngữ pháp tự động với độ chính xác cao dành cho Tiếng Việt.</div>
-            </div>
-            <div class="feature-card">
-                <div class="icon-box bg-purple"><i class="fa-solid fa-palette"></i></div>
-                <div class="feature-h3">Template Đa Dạng</div>
-                <div class="feature-p">Hàng trăm mẫu tài liệu chuyên nghiệp sẵn có cho mọi mục đích: Báo cáo, CV, Đơn từ, Hợp đồng.</div>
-            </div>
-            <div class="feature-card">
-                <div class="icon-box bg-orange"><i class="fa-solid fa-sliders"></i></div>
-                <div class="feature-h3">Tùy Chỉnh Linh Hoạt</div>
-                <div class="feature-p">Điều chỉnh mọi chi tiết theo ý muốn: font chữ, màu sắc, căn lề chỉ với vài cú click chuột.</div>
-            </div>
-            <div class="feature-card">
-                <div class="icon-box bg-red"><i class="fa-solid fa-bolt"></i></div>
-                <div class="feature-h3">Xử Lý Siêu Nhanh</div>
-                <div class="feature-p">Xử lý tài liệu trong vài giây dù file lớn hay phức tạp. Không còn chờ đợi.</div>
-            </div>
-            <div class="feature-card">
-                <div class="icon-box bg-teal"><i class="fa-solid fa-shield-halved"></i></div>
-                <div class="feature-h3">Bảo Mật Tuyệt Đối</div>
-                <div class="feature-p">Mọi tài liệu được mã hóa end-to-end, đảm bảo an toàn riêng tư. File tự hủy sau 24h.</div>
-            </div>
-        </div>
-    </div>
+<div class="container">
+<div style="text-align: center; margin-bottom: 60px;">
+<h2 style="font-size: 2.25rem; margin-bottom: 10px; font-weight: 700; color: #1F2937;">EasyWord Làm Được Gì?</h2>
+<p style="color: #6B7280;">Khám phá các tính năng mạnh mẽ giúp công việc của bạn hiệu quả hơn</p>
+</div>
+<div class="feature-grid">
+<div class="feature-card">
+<div class="icon-box bg-blue"><i class="fa-solid fa-file-lines"></i></div>
+<div class="feature-h3">Tự Động Định Dạng</div>
+<div class="feature-p">AI tự động nhận diện và áp dụng định dạng chuẩn (Heading, Paragraph, List) cho tài liệu ngay lập tức.</div>
+</div>
+<div class="feature-card">
+<div class="icon-box bg-green"><i class="fa-solid fa-check-double"></i></div>
+<div class="feature-h3">Kiểm Tra Chính Tả</div>
+<div class="feature-p">Phát hiện và sửa lỗi chính tả, ngữ pháp tự động với độ chính xác cao dành cho Tiếng Việt.</div>
+</div>
+<div class="feature-card">
+<div class="icon-box bg-purple"><i class="fa-solid fa-palette"></i></div>
+<div class="feature-h3">Template Đa Dạng</div>
+<div class="feature-p">Hàng trăm mẫu tài liệu chuyên nghiệp sẵn có cho mọi mục đích: Báo cáo, CV, Đơn từ, Hợp đồng.</div>
+</div>
+<div class="feature-card">
+<div class="icon-box bg-orange"><i class="fa-solid fa-sliders"></i></div>
+<div class="feature-h3">Tùy Chỉnh Linh Hoạt</div>
+<div class="feature-p">Điều chỉnh mọi chi tiết theo ý muốn: font chữ, màu sắc, căn lề chỉ với vài cú click chuột.</div>
+</div>
+<div class="feature-card">
+<div class="icon-box bg-red"><i class="fa-solid fa-bolt"></i></div>
+<div class="feature-h3">Xử Lý Siêu Nhanh</div>
+<div class="feature-p">Xử lý tài liệu trong vài giây dù file lớn hay phức tạp. Không còn chờ đợi.</div>
+</div>
+<div class="feature-card">
+<div class="icon-box bg-teal"><i class="fa-solid fa-shield-halved"></i></div>
+<div class="feature-h3">Bảo Mật Tuyệt Đối</div>
+<div class="feature-p">Mọi tài liệu được mã hóa end-to-end, đảm bảo an toàn riêng tư. File tự hủy sau 24h.</div>
+</div>
+</div>
+</div>
 </section>
 """, unsafe_allow_html=True)
 
 # 6. CTA SECTION
 st.markdown("""
 <section class="cta-section">
-    <div class="container">
-        <h2 style="font-size: 2.5rem; margin-bottom: 20px; font-weight: 700;">Sẵn Sàng Bắt Đầu?</h2>
-        <p style="font-size: 1.1rem; opacity: 0.9;">Tham gia hàng nghìn người dùng đang tin dùng EasyWord mỗi ngày để tối ưu hóa công việc.</p>
-        <a href="#" class="btn-white">Đăng Ký Miễn Phí Ngay</a>
-    </div>
+<div class="container">
+<h2 style="font-size: 2.5rem; margin-bottom: 20px; font-weight: 700;">Sẵn Sàng Bắt Đầu?</h2>
+<p style="font-size: 1.1rem; opacity: 0.9;">Tham gia hàng nghìn người dùng đang tin dùng EasyWord mỗi ngày để tối ưu hóa công việc.</p>
+<a href="#" class="btn-white">Đăng Ký Miễn Phí Ngay</a>
+</div>
 </section>
 """, unsafe_allow_html=True)
 
 # 7. FOOTER
 st.markdown("""
 <footer class="custom-footer">
-    <div class="container">
-        <div class="footer-grid">
-            <div class="footer-col">
-                <a href="#" class="logo" style="color: #fff; margin-bottom: 20px; display: inline-block;">
-                    <i class="fa-solid fa-file-word"></i> EasyWord
-                </a>
-                <p style="font-size: 0.9rem; color: #9CA3AF;">Giải pháp tạo tài liệu Word thông minh và chuyên nghiệp hàng đầu Việt Nam.</p>
-            </div>
-            <div class="footer-col">
-                <h4>Sản phẩm</h4>
-                <a href="#">Tính năng</a>
-                <a href="#">Bảng giá</a>
-                <a href="#">Templates</a>
-                <a href="#">API</a>
-            </div>
-            <div class="footer-col">
-                <h4>Hỗ trợ</h4>
-                <a href="#">Trung tâm trợ giúp</a>
-                <a href="#">Liên hệ</a>
-                <a href="#">Cộng đồng</a>
-            </div>
-            <div class="footer-col">
-                <h4>Pháp lý</h4>
-                <a href="#">Điều khoản</a>
-                <a href="#">Bảo mật</a>
-                <a href="#">Cookie Policy</a>
-            </div>
-        </div>
-        <div style="text-align: center; border-top: 1px solid #374151; padding-top: 20px; font-size: 0.9rem; color: #9CA3AF;">
-            &copy; 2026 EasyWord. All rights reserved.
-        </div>
-    </div>
+<div class="container">
+<div class="footer-grid">
+<div class="footer-col">
+<a href="#" class="logo" style="color: #fff; margin-bottom: 20px; display: inline-block;">
+<i class="fa-solid fa-file-word"></i> EasyWord
+</a>
+<p style="font-size: 0.9rem; color: #9CA3AF;">Giải pháp tạo tài liệu Word thông minh và chuyên nghiệp hàng đầu Việt Nam.</p>
+</div>
+<div class="footer-col">
+<h4>Sản phẩm</h4>
+<a href="#">Tính năng</a>
+<a href="#">Bảng giá</a>
+<a href="#">Templates</a>
+<a href="#">API</a>
+</div>
+<div class="footer-col">
+<h4>Hỗ trợ</h4>
+<a href="#">Trung tâm trợ giúp</a>
+<a href="#">Liên hệ</a>
+<a href="#">Cộng đồng</a>
+</div>
+<div class="footer-col">
+<h4>Pháp lý</h4>
+<a href="#">Điều khoản</a>
+<a href="#">Bảo mật</a>
+<a href="#">Cookie Policy</a>
+</div>
+</div>
+<div style="text-align: center; border-top: 1px solid #374151; padding-top: 20px; font-size: 0.9rem; color: #9CA3AF;">
+&copy; 2026 EasyWord. All rights reserved.
+</div>
+</div>
 </footer>
 """, unsafe_allow_html=True)
