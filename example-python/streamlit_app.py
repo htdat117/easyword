@@ -56,10 +56,13 @@ body { background-color: #F9FAFB; color: #1F2937; line-height: 1.6; }
 .btn-login { color: #1F2937; margin-right: 15px; }
 .btn-signup { background-color: #2563EB; color: #FFFFFF !important; padding: 8px 20px; border-radius: 6px; }
 
-/* Hero Section - contains everything */
-.hero-full { background: linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%); padding: 60px 20px 100px; text-align: center; }
+/* Apply gradient to entire Streamlit app background */
+.stApp { background: linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 50%, #FFFFFF 50%) !important; }
+
+/* Hero Section */
+.hero-full { background: transparent; padding: 60px 20px 30px; text-align: center; }
 .hero-title { font-size: 2.8rem; color: #111827; margin-bottom: 16px; line-height: 1.2; font-weight: 700; }
-.hero-desc { font-size: 1.1rem; color: #6B7280; margin-bottom: 40px; max-width: 600px; margin-left: auto; margin-right: auto; }
+.hero-desc { font-size: 1.1rem; color: #6B7280; margin-bottom: 30px; max-width: 600px; margin-left: auto; margin-right: auto; }
 
 /* Tool Box - centered card */
 .tool-box { background: #FFFFFF; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 30px; max-width: 700px; margin: 0 auto; border: 1px solid #E5E7EB; }
