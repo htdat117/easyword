@@ -4,25 +4,8 @@ from pathlib import Path
 import logging
 import sys
 
-# Setup logging first
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-
-# Try to import with error handling for cloud deployment
-try:
-    from docx import Document
-    # from app.services.report_formatter import (
-    #     format_uploaded_stream,
-    #     docx_to_html,
-    # )
-    # from app.config import TEMP_DIR, CONVERTAPI_SECRET
-    st.write("DEBUG: Basic imports passed (docx). App imports temporary disabled.")
-except Exception as e:
-    st.error(f"Import Error: {e}")
-    st.error(f"Python path: {sys.path}")
-    st.stop()
-
 # ============================================================================
-# CẤU HÌNH STREAMLIT
+# CẤU HÌNH STREAMLIT (MUST BE FIRST)
 # ============================================================================
 st.set_page_config(
     page_title="EasyWord - Tạo Tài Liệu Word Thông Minh",
@@ -31,7 +14,27 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+
+# Fix path to ensure 'app' module can be imported
+current_dir = Path(__file__).parent
+if str(current_dir) not in sys.path:
+    sys.path.append(str(current_dir))
+
+# Import app modules
+try:
+    from docx import Document
+    from app.services.report_formatter import (
+        format_uploaded_stream,
+        docx_to_html,
+    )
+    from app.config import TEMP_DIR, CONVERTAPI_SECRET
+except Exception as e:
+    st.error(f"❌ Import Error: {e}")
+    st.code(f"Sys Path: {sys.path}")
+    st.stop()
+
 
 # ============================================================================
 # CSS - EASYWORD BLUE THEME (MATCHING HTML)
