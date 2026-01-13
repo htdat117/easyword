@@ -152,43 +152,102 @@ body {
     margin: 0 auto;
     border: 1px solid #E5E7EB;
 }
-/* Streamlit File Uploader Customization */
+
+/* TABS CUSTOMIZATION - Match .tabs & .tab-btn */
+[data-testid="stTabs"] {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+div[data-testid="stTabs"] button[data-testid="stTab"] {
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #6B7280; /* var(--text-light) */
+    font-weight: 600;
+    padding: 10px 20px;
+    height: auto;
+    border-radius: 0;
+}
+div[data-testid="stTabs"] button[data-testid="stTab"]:hover {
+    color: #2563EB; /* var(--primary-color) */
+}
+div[data-testid="stTabs"] button[data-testid="stTab"][aria-selected="true"] {
+    color: #2563EB;
+    border-bottom: 2px solid #2563EB;
+}
+/* Hide top decoration */
+[data-testid="stTabs"] > div:first-child {
+    border-bottom: none !important;
+}
+
+/* FILE UPLOADER CUSTOMIZATION - Match .upload-area */
 [data-testid="stFileUploader"] {
     border: 2px dashed #D1D5DB;
     border-radius: 12px;
-    padding: 2rem;
+    padding: 3rem 2rem;
     background-color: #F9FAFB;
     transition: all 0.3s;
+    text-align: center;
+    position: relative;
 }
 [data-testid="stFileUploader"]:hover {
-    border-color: var(--primary-color);
+    border-color: #2563EB; /* var(--primary-color) */
     background-color: #EFF6FF;
 }
-[data-testid="stFileUploader"] section {
-    background-color: transparent !important;
+/* Insert Icon via Pseudo-element (fa-cloud-arrow-up) */
+[data-testid="stFileUploader"]::before {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    content: "\\f0ee"; 
+    font-size: 3rem;
+    color: #2563EB;
+    display: block;
+    margin-bottom: 1rem;
 }
-/* Process Button */
+/* Hide default "Drag and drop" text */
+[data-testid="stFileUploader"] section > div > span {
+    display: none;
+}
+[data-testid="stFileUploader"] small {
+    display: none;
+}
+/* Browse Button Style */
+[data-testid="stFileUploader"] button {
+    display: inline-block;
+    background: #E5E7EB; 
+    color: #374151;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-top: 10px;
+}
+
+/* ACTION BUTTON - Match .btn-action */
 div.stButton > button {
     display: block;
     width: 100%;
-    padding: 0.75rem 1rem;
-    background-color: var(--primary-color);
-    color: var(--white);
+    padding: 15px;
+    background-color: #2563EB; /* var(--primary-color) */
+    color: #FFFFFF;
     border: none;
     border-radius: 8px;
     font-size: 1rem;
     font-weight: 600;
-    margin-top: 10px;
+    margin-top: 20px;
     cursor: pointer;
-    transition: background 0.3s;
+    box-shadow: none;
 }
 div.stButton > button:hover {
-    background-color: var(--primary-dark);
-    color: white;
-    border-color: var(--primary-dark);
+    background-color: #1D4ED8;
+    color: #FFFFFF;
+    border-color: #1D4ED8;
 }
 div.stButton > button:active {
-    color: white;
+    color: #FFFFFF;
 }
 /* --- Features Section --- */
 .features {
