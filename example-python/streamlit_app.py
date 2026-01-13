@@ -640,10 +640,35 @@ with tab1:
                 if (dropzone) {
                     dropzone.style.border = '2px dashed #D1D5DB';
                     dropzone.style.borderRadius = '12px';
-                    dropzone.style.padding = '40px 20px';
+                    dropzone.style.padding = '50px 20px';
                     dropzone.style.backgroundColor = '#F9FAFB';
                     dropzone.style.textAlign = 'center';
+                    dropzone.style.display = 'flex';
+                    dropzone.style.flexDirection = 'column';
+                    dropzone.style.alignItems = 'center';
+                    dropzone.style.justifyContent = 'center';
                 }
+                
+                // Center the instructions container
+                const instructions = uploader.querySelector('[data-testid="stFileUploaderDropzoneInstructions"]');
+                if (instructions) {
+                    instructions.style.display = 'flex';
+                    instructions.style.flexDirection = 'column';
+                    instructions.style.alignItems = 'center';
+                    instructions.style.justifyContent = 'center';
+                    instructions.style.textAlign = 'center';
+                    instructions.style.width = '100%';
+                }
+                
+                // Center all inner divs
+                const innerDivs = uploader.querySelectorAll('[data-testid="stFileUploaderDropzone"] > div');
+                innerDivs.forEach(div => {
+                    div.style.display = 'flex';
+                    div.style.flexDirection = 'column';
+                    div.style.alignItems = 'center';
+                    div.style.justifyContent = 'center';
+                    div.style.width = '100%';
+                });
             });
             
             // Center the tabs
