@@ -1,126 +1,120 @@
-# 📄 EasyWord - Chuẩn Hóa Báo Cáo Word
+# 🚀 EasyWord - Landing Page
 
-Ứng dụng web để tạo và chuẩn hóa file Word theo chuẩn báo cáo học thuật (UEL).
+Website landing page chính thức của EasyWord - Giải pháp tạo tài liệu Word thông minh.
 
-## ✨ Tính Năng
+## 📁 Cấu trúc dự án
 
-- ✅ Tạo báo cáo mới với mẫu chuẩn
-- ✅ Chuẩn hóa file Word có sẵn
-- ✅ Định dạng theo chuẩn UEL (Times New Roman, lề, giãn dòng...)
-- ✅ Tự động tạo mục lục
-- ✅ Đánh số trang
-- ✅ Nhiều tùy chọn định dạng
+```
+Personal Project/
+│
+├── index.html                  # Trang chủ landing page
+│
+├── assets/                     # Thư mục chứa tất cả assets
+│   ├── css/
+│   │   └── style.css          # File CSS chính
+│   ├── images/
+│   │   └── logo.jpg           # Logo EasyWord
+│   └── js/
+│       └── main.js            # JavaScript cho tương tác
+│
+├── example-python/             # Streamlit app (dự án riêng)
+│
+└── README.md                   # File này
+```
 
-## 🚀 Cài Đặt và Chạy
+## ✨ Tính năng Landing Page
 
-### Yêu Cầu
+### 🎨 **Thiết kế**
+- ✅ Header cố định với logo và buttons Đăng nhập/Đăng ký
+- ✅ Hero section với tiêu đề nổi bật
+- ✅ Upload area với drag & drop
+- ✅ 6 feature cards mô tả tính năng EasyWord
+- ✅ CTA section kêu gọi hành động
+- ✅ Footer đầy đủ với links
 
-- Python 3.7+
-- pip
+### 🔧 **Chức năng**
+- ✅ Upload file với drag-and-drop
+- ✅ Kiểm tra định dạng file (DOC, DOCX, TXT)
+- ✅ Giới hạn kích thước file (max 10MB)
+- ✅ Preview file đã chọn
+- ✅ Scroll animations
+- ✅ Responsive design (mobile, tablet, desktop)
 
-### Bước 1: Clone Repository
+### 🎯 **Công nghệ sử dụng**
+- HTML5
+- CSS3 (Custom properties, Grid, Flexbox)
+- Vanilla JavaScript (ES6+)
+- Google Fonts (Inter)
 
+## 🚀 Cách sử dụng
+
+### Chạy local
+1. Mở file `index.html` trong trình duyệt
+2. Hoặc dùng Live Server extension trong VS Code
+
+### Deploy lên hosting
+
+#### **Netlify** (Khuyến nghị)
 ```bash
-git clone https://github.com/htdat117/easyword.git
-cd easyword/example-python
+# Drag & drop thư mục vào Netlify Dashboard
+# Hoặc dùng CLI
+netlify deploy
 ```
 
-### Bước 2: Cài Đặt Dependencies
-
+#### **Vercel**
 ```bash
-pip install -r requirements.txt
+vercel
 ```
 
-### Bước 3: Chạy Ứng Dụng
+#### **GitHub Pages**
+1. Push code lên GitHub
+2. Settings → Pages → Source: main branch
+3. Truy cập: `https://username.github.io/repo-name`
 
-```bash
-python main.py
+#### **FTP/cPanel**
+Upload tất cả files (giữ nguyên cấu trúc thư mục) lên hosting
+
+## 📝 Tùy chỉnh
+
+### Thay logo
+Thay file `assets/images/logo.jpg` bằng logo mới
+
+### Đổi màu chủ đạo
+Mở `assets/css/style.css`, tìm `:root` và sửa:
+```css
+--primary-blue: #2563eb;  /* Đổi sang màu khác */
 ```
 
-### Bước 4: Mở Trình Duyệt
+### Chỉnh sửa nội dung
+Mở `index.html` và chỉnh sửa text trong các tags
 
-Mở http://localhost:5000 để sử dụng giao diện:
-- **Tạo báo cáo mới**: Nhập thông tin và tạo file Word mẫu
-- **Chuẩn hóa file có sẵn**: Upload file `.docx` để chuẩn hóa
+### Thêm tính năng mới
+Thêm feature card mới trong section `.features-grid`
 
-## 📁 Cấu Trúc Dự Án
+## 🎨 Features Showcase
 
-```
-example-python/
-├── main.py                    # Entry point
-├── requirements.txt           # Dependencies
-├── app/
-│   ├── __init__.py           # Flask app factory
-│   ├── config.py             # Cấu hình (font, margin, etc.)
-│   ├── routes/
-│   │   ├── report.py         # API endpoints
-│   │   └── static.py         # Serve frontend
-│   ├── services/
-│   │   └── report_formatter.py  # Logic xử lý Word
-│   └── utils/
-│       └── options.py        # Xử lý tùy chọn
-└── frontend/
-    └── index.html            # Giao diện người dùng
-```
+Landing page giới thiệu 6 tính năng chính:
 
-## 🎛️ Tùy Chọn Định Dạng
+1. 🎯 **Tự Động Định Dạng** - AI tự động format tài liệu
+2. ✅ **Kiểm Tra Chính Tả** - Sửa lỗi tiếng Việt & tiếng Anh
+3. 🎨 **Template Đa Dạng** - Hàng trăm mẫu sẵn có
+4. ⚙️ **Tùy Chỉnh Linh Hoạt** - Điều chỉnh mọi chi tiết
+5. ⚡ **Xử Lý Siêu Nhanh** - AI xử lý trong vài giây
+6. 🔒 **Bảo Mật Tuyệt Đối** - Mã hóa end-to-end
 
-Giao diện cho phép bật/tắt các tính năng:
-- Xóa dòng trống & dấu cách thừa
-- Áp dụng font Times New Roman 13pt / 14pt
-- Thiết lập lề chuẩn UEL (Trái 3.5cm, Phải 2cm, Trên/Dưới 2.5cm)
-- Thụt đầu dòng 1cm và giãn dòng 1.3
-- Nhận diện & chuẩn hóa tiêu đề
-- Chuẩn hóa định dạng trong bảng
-- Chèn mục lục tự động
-- Đánh số trang (Ả Rập hoặc La Mã)
+## 🌐 Browser Support
 
-## 📚 Tài Liệu
+- ✅ Chrome/Edge (Latest)
+- ✅ Firefox (Latest)
+- ✅ Safari (Latest)
+- ✅ Mobile browsers
 
-Xem file `HUONG_DAN_BAO_CAO_WORD.md` để biết chi tiết về:
-- Công nghệ sử dụng
-- Lộ trình phát triển
-- Tài liệu tham khảo
+## 📱 Responsive Breakpoints
 
-## 🔧 API Endpoints
-
-### POST `/api/generate-report`
-
-Tạo báo cáo mới từ thông tin nhập vào.
-
-**Request Body:**
-```json
-{
-  "studentName": "Nguyễn Văn A",
-  "className": "Công nghệ thông tin K45",
-  "reportTitle": "Báo cáo môn...",
-  "year": "2024-2025",
-  "content": "Nội dung báo cáo...",
-  "options": {
-    "clean_whitespace": true,
-    "normalize_font": true,
-    "insert_toc": true,
-    ...
-  }
-}
-```
-
-### POST `/api/format-report`
-
-Chuẩn hóa file Word có sẵn.
-
-**Request:** Form data với file `.docx` và options JSON.
-
-## 📝 Ghi Chú
-
-- Sau khi tạo mục lục, nhấn `Ctrl + A` rồi `F9` trong Word để cập nhật
-- File Word được tạo theo chuẩn UEL (Trường Đại học Kinh tế - Luật)
-- Có thể tùy chỉnh các tùy chọn định dạng theo nhu cầu
+- Desktop: > 768px
+- Tablet: 481px - 768px
+- Mobile: ≤ 480px
 
 ## 📄 License
 
-MIT License
-
-## 👤 Tác Giả
-
-- GitHub: [@htdat117](https://github.com/htdat117)
+All rights reserved © 2026 EasyWord
