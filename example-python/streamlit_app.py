@@ -593,6 +593,79 @@ with tab1:
         key="main_uploader"
     )
     
+    # Inject JavaScript to customize uploader appearance
+    st.components.v1.html("""
+    <script>
+    (function() {
+        function customizeUploader() {
+            // Find the uploader section
+            const uploaders = window.parent.document.querySelectorAll('[data-testid="stFileUploader"]');
+            uploaders.forEach(uploader => {
+                // Hide default SVG icon
+                const svgs = uploader.querySelectorAll('svg');
+                svgs.forEach(svg => { svg.style.display = 'none'; });
+                
+                // Find and modify the "Drag and drop" text
+                const spans = uploader.querySelectorAll('span');
+                spans.forEach(span => {
+                    if (span.textContent.includes('Drag and drop') || span.textContent.includes('drag and drop')) {
+                        span.textContent = 'Kéo thả hoặc chọn file Word (.docx)';
+                        span.style.fontSize = '1.1rem';
+                        span.style.fontWeight = '600';
+                        span.style.color = '#111827';
+                        span.style.display = 'block';
+                        span.style.textAlign = 'center';
+                        span.style.marginBottom = '5px';
+                        
+                        // Add custom icon before the text
+                        if (!uploader.querySelector('.custom-upload-icon')) {
+                            const iconDiv = document.createElement('div');
+                            iconDiv.className = 'custom-upload-icon';
+                            iconDiv.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: #2563EB; margin-bottom: 15px;"></i>';
+                            iconDiv.style.textAlign = 'center';
+                            span.parentElement.insertBefore(iconDiv, span);
+                        }
+                    }
+                });
+                
+                // Center the Browse button
+                const buttons = uploader.querySelectorAll('button');
+                buttons.forEach(btn => {
+                    btn.style.margin = '15px auto 0 auto';
+                    btn.style.display = 'block';
+                });
+                
+                // Style the upload dropzone
+                const dropzone = uploader.querySelector('[data-testid="stFileUploaderDropzone"]');
+                if (dropzone) {
+                    dropzone.style.border = '2px dashed #D1D5DB';
+                    dropzone.style.borderRadius = '12px';
+                    dropzone.style.padding = '40px 20px';
+                    dropzone.style.backgroundColor = '#F9FAFB';
+                    dropzone.style.textAlign = 'center';
+                }
+            });
+            
+            // Center the tabs
+            const tabLists = window.parent.document.querySelectorAll('[data-baseweb="tab-list"]');
+            tabLists.forEach(tabList => {
+                tabList.style.justifyContent = 'center';
+                tabList.style.gap = '15px';
+            });
+        }
+        
+        // Run after a short delay to ensure DOM is ready
+        setTimeout(customizeUploader, 500);
+        setTimeout(customizeUploader, 1500);
+        setTimeout(customizeUploader, 3000);
+        
+        // Also observe for changes
+        const observer = new MutationObserver(customizeUploader);
+        observer.observe(window.parent.document.body, { childList: true, subtree: true });
+    })();
+    </script>
+    """, height=0)
+    
     if uploaded_file:
         st.success(f"✅ Đã chọn: **{uploaded_file.name}**")
     
