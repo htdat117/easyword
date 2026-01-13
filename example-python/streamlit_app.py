@@ -45,58 +45,64 @@ st.markdown("""
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-:root { --primary-color: #2563EB; --primary-dark: #1D4ED8; --secondary-color: #F3F4F6; --text-dark: #1F2937; --text-light: #6B7280; --white: #FFFFFF; --accent: #F59E0B; }
-* { font-family: 'Inter', sans-serif; }
-body { background-color: #F9FAFB; color: var(--text-dark); line-height: 1.6; }
-#MainMenu, footer, header[data-testid="stHeader"], .stDeployButton { display: none !important; }
-.block-container { padding: 0 !important; max-width: 100% !important; }
-.custom-header { background-color: var(--white); box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; padding: 0; }
-.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-.nav-wrapper { display: flex; justify-content: space-between; align-items: center; height: 70px; }
-.logo { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.btn-login { color: var(--text-dark); margin-right: 15px; text-decoration: none; font-weight: 500; padding: 8px 16px; border-radius: 6px; }
-.btn-signup { background-color: var(--primary-color); color: var(--white); text-decoration: none; padding: 8px 20px; border-radius: 6px; font-weight: 500; transition: background 0.3s; }
-.btn-signup:hover { background: var(--primary-dark); color: white; }
-.hero { text-align: center; padding: 80px 0 60px; background: linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%); }
-.hero-title { font-size: 3rem; color: #111827; margin-bottom: 16px; line-height: 1.2; font-weight: 700; }
-.hero-desc { font-size: 1.125rem; color: var(--text-light); margin-bottom: 40px; max-width: 600px; margin-left: auto; margin-right: auto; }
-.tool-box-wrapper { background: var(--white); border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 30px; max-width: 800px; margin: 0 auto; border: 1px solid #E5E7EB; }
-[data-testid="stTabs"] { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
-div[data-testid="stTabs"] button[data-testid="stTab"] { background-color: transparent; border: none; border-bottom: 2px solid transparent; color: #6B7280; font-weight: 600; padding: 10px 20px; height: auto; border-radius: 0; }
-div[data-testid="stTabs"] button[data-testid="stTab"]:hover { color: #2563EB; }
-div[data-testid="stTabs"] button[data-testid="stTab"][aria-selected="true"] { color: #2563EB; border-bottom: 2px solid #2563EB; }
-[data-testid="stTabs"] > div:first-child { border-bottom: none !important; }
-[data-testid="stFileUploader"] { border: 2px dashed #D1D5DB; border-radius: 12px; padding: 3rem 2rem; background-color: #F9FAFB; transition: all 0.3s; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-[data-testid="stFileUploader"]:hover { border-color: #2563EB; background-color: #EFF6FF; }
-[data-testid="stFileUploader"]::before { content: "\\f0ee"; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 3rem; color: #2563EB; margin-bottom: 15px; display: block; }
-[data-testid="stFileUploader"]::after { content: "Kéo thả hoặc chọn file Word (.docx) \\A Giới hạn 200MB/file • Hỗ trợ DOCX"; white-space: pre-wrap; font-size: 1rem; font-weight: 600; color: #4B5563; margin-top: 10px; margin-bottom: 15px; display: block; }
-[data-testid="stFileUploader"] section > div > span, [data-testid="stFileUploader"] small { display: none !important; }
-[data-testid="stFileUploader"] button { display: inline-block; background: #E5E7EB; color: #374151; border: none; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; margin-top: 10px; }
-div.stButton > button { display: block; width: 100%; padding: 15px; background-color: #2563EB; color: #FFFFFF; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; margin-top: 20px; cursor: pointer; box-shadow: none; }
-div.stButton > button:hover { background-color: #1D4ED8; color: #FFFFFF; border-color: #1D4ED8; }
-div.stButton > button:active { color: #FFFFFF; }
-.features { padding: 80px 0; background-color: var(--white); }
-.feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
-.feature-card { padding: 30px; border-radius: 12px; background: #F8FAFC; transition: transform 0.3s, box-shadow 0.3s; border: 1px solid transparent; }
-.feature-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); border-color: #E2E8F0; background: var(--white); }
-.icon-box { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 1.5rem; }
-.bg-blue { background: #DBEAFE; color: #2563EB; }
-.bg-green { background: #D1FAE5; color: #059669; }
-.bg-purple { background: #EDE9FE; color: #7C3AED; }
-.bg-orange { background: #FFEDD5; color: #EA580C; }
-.bg-red { background: #FEE2E2; color: #DC2626; }
-.bg-teal { background: #CCFBF1; color: #0D9488; }
-.feature-h3 { font-size: 1.25rem; margin-bottom: 10px; font-weight: 600; color: #1F2937; }
-.feature-p { color: var(--text-light); font-size: 0.95rem; }
-.cta-section { padding: 80px 0; background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%); color: var(--white); text-align: center; }
-.btn-white { display: inline-block; background: var(--white); color: var(--primary-color) !important; padding: 15px 40px; border-radius: 8px; font-weight: 700; text-decoration: none; margin-top: 20px; transition: transform 0.2s; }
-.btn-white:hover { transform: scale(1.05); }
-.custom-footer { background-color: #111827; color: #D1D5DB; padding: 60px 0 20px; margin-top: -100px; }
-.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
-.footer-col h4 { color: white; margin-bottom: 20px; font-weight: 600; }
-.footer-col a { color: #9CA3AF; text-decoration: none; display: block; margin-bottom: 10px; }
-.footer-col a:hover { color: white; }
-@media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr; text-align: center; } .hero-title { font-size: 2rem; } }
+:root{--primary-color:#2563EB;--primary-dark:#1D4ED8;--secondary-color:#F3F4F6;--text-dark:#1F2937;--text-light:#6B7280;--white:#FFFFFF;--accent:#F59E0B}
+*{font-family:'Inter',sans-serif}
+body{background-color:#F9FAFB;color:var(--text-dark);line-height:1.6}
+#MainMenu,footer,header[data-testid="stHeader"],.stDeployButton{display:none!important}
+.block-container{padding:0!important;max-width:100%!important}
+.custom-header{background-color:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.1);position:sticky;top:0;z-index:1000;padding:0}
+.container{max-width:1200px;margin:0 auto;padding:0 20px}
+.nav-wrapper{display:flex;justify-content:space-between;align-items:center;height:70px}
+.logo{font-size:1.5rem;font-weight:700;color:var(--primary-color);display:flex;align-items:center;gap:10px;text-decoration:none}
+.btn-login{color:var(--text-dark);margin-right:15px;text-decoration:none;font-weight:500;padding:8px 16px;border-radius:6px}
+.btn-signup{background-color:var(--primary-color);color:var(--white);text-decoration:none;padding:8px 20px;border-radius:6px;font-weight:500;transition:background 0.3s}
+.btn-signup:hover{background:var(--primary-dark);color:white}
+.hero{text-align:center;padding:80px 0 60px;background:linear-gradient(180deg,#FFFFFF 0%,#EFF6FF 100%)}
+.hero-title{font-size:3rem;color:#111827;margin-bottom:16px;line-height:1.2;font-weight:700}
+.hero-desc{font-size:1.125rem;color:var(--text-light);margin-bottom:40px;max-width:600px;margin-left:auto;margin-right:auto}
+.tool-box-wrapper{background:var(--white);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.05);padding:30px;max-width:800px;margin:0 auto;border:1px solid #E5E7EB}
+[data-testid="stTabs"]{display:flex;justify-content:center;gap:15px;margin-bottom:20px}
+div[data-testid="stTabs"] button[data-testid="stTab"]{background-color:transparent;border:none;border-bottom:2px solid transparent;color:#6B7280;font-weight:600;padding:10px 20px;height:auto;border-radius:0}
+div[data-testid="stTabs"] button[data-testid="stTab"]:hover{color:#2563EB}
+div[data-testid="stTabs"] button[data-testid="stTab"][aria-selected="true"]{color:#2563EB;border-bottom:2px solid #2563EB}
+[data-testid="stTabs"]>div:first-child{border-bottom:none!important}
+[data-testid="stFileUploader"]{border:2px dashed #D1D5DB;border-radius:12px;padding:50px 20px;background-color:#F9FAFB;transition:all 0.3s;text-align:center;position:relative;min-height:200px}
+[data-testid="stFileUploader"]:hover{border-color:#2563EB;background-color:#EFF6FF}
+[data-testid="stFileUploader"] label{display:none!important}
+[data-testid="stFileUploader"] section{background:transparent!important;border:none!important;padding:0!important}
+[data-testid="stFileUploader"] section>div{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important}
+[data-testid="stFileUploader"] section>div>span{display:none!important}
+[data-testid="stFileUploader"] section small{display:none!important}
+[data-testid="stFileUploader"]::before{content:"\\f0ee";font-family:"Font Awesome 6 Free";font-weight:900;font-size:3rem;color:#2563EB;display:block;margin-bottom:15px}
+[data-testid="stFileUploader"]::after{content:"Kéo thả hoặc chọn file Word (.docx)";font-size:1.1rem;font-weight:600;color:#1F2937;display:block;margin-bottom:5px}
+.upload-hint{font-size:0.9rem;color:#9CA3AF;margin-top:5px;display:block;text-align:center}
+[data-testid="stFileUploader"] button{display:inline-block!important;background:#E5E7EB!important;color:#374151!important;border:1px solid #D1D5DB!important;padding:8px 16px!important;border-radius:8px!important;font-size:0.9rem!important;font-weight:500!important;margin-top:15px!important;cursor:pointer!important}
+[data-testid="stFileUploader"] button:hover{background:#D1D5DB!important}
+div.stButton>button{display:block;width:100%;padding:15px;background-color:#2563EB;color:#FFFFFF;border:none;border-radius:8px;font-size:1rem;font-weight:600;margin-top:20px;cursor:pointer;box-shadow:none}
+div.stButton>button:hover{background-color:#1D4ED8;color:#FFFFFF;border-color:#1D4ED8}
+div.stButton>button:active{color:#FFFFFF}
+.features{padding:80px 0;background-color:var(--white)}
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:30px}
+.feature-card{padding:30px;border-radius:12px;background:#F8FAFC;transition:transform 0.3s,box-shadow 0.3s;border:1px solid transparent}
+.feature-card:hover{transform:translateY(-5px);box-shadow:0 10px 20px rgba(0,0,0,0.05);border-color:#E2E8F0;background:var(--white)}
+.icon-box{width:50px;height:50px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:1.5rem}
+.bg-blue{background:#DBEAFE;color:#2563EB}
+.bg-green{background:#D1FAE5;color:#059669}
+.bg-purple{background:#EDE9FE;color:#7C3AED}
+.bg-orange{background:#FFEDD5;color:#EA580C}
+.bg-red{background:#FEE2E2;color:#DC2626}
+.bg-teal{background:#CCFBF1;color:#0D9488}
+.feature-h3{font-size:1.25rem;margin-bottom:10px;font-weight:600;color:#1F2937}
+.feature-p{color:var(--text-light);font-size:0.95rem}
+.cta-section{padding:80px 0;background:linear-gradient(135deg,#2563EB 0%,#1E40AF 100%);color:var(--white);text-align:center}
+.btn-white{display:inline-block;background:var(--white);color:var(--primary-color)!important;padding:15px 40px;border-radius:8px;font-weight:700;text-decoration:none;margin-top:20px;transition:transform 0.2s}
+.btn-white:hover{transform:scale(1.05)}
+.custom-footer{background-color:#111827;color:#D1D5DB;padding:60px 0 20px;margin-top:-100px}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
+.footer-col h4{color:white;margin-bottom:20px;font-weight:600}
+.footer-col a{color:#9CA3AF;text-decoration:none;display:block;margin-bottom:10px}
+.footer-col a:hover{color:white}
+@media (max-width:768px){.footer-grid{grid-template-columns:1fr;text-align:center}.hero-title{font-size:2rem}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -224,6 +230,7 @@ tab1, tab2 = st.tabs(["☁️ Upload File", "⚡ Test Nhanh"])
 with tab1:
     st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
     uploaded_file = st.file_uploader("Upload Word File", type=["docx"], label_visibility="collapsed")
+    st.markdown('<p class="upload-hint">Giới hạn 200MB/file • Hỗ trợ DOCX</p>', unsafe_allow_html=True)
     
     if uploaded_file:
         st.success(f"✅ Selected: {uploaded_file.name}")
