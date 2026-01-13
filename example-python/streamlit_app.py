@@ -66,10 +66,11 @@ div[data-testid="stTabs"] button[data-testid="stTab"] { background-color: transp
 div[data-testid="stTabs"] button[data-testid="stTab"]:hover { color: #2563EB; }
 div[data-testid="stTabs"] button[data-testid="stTab"][aria-selected="true"] { color: #2563EB; border-bottom: 2px solid #2563EB; }
 [data-testid="stTabs"] > div:first-child { border-bottom: none !important; }
-[data-testid="stFileUploader"] { border: 2px dashed #D1D5DB; border-radius: 12px; padding: 3rem 2rem; background-color: #F9FAFB; transition: all 0.3s; text-align: center; position: relative; }
+[data-testid="stFileUploader"] { border: 2px dashed #D1D5DB; border-radius: 12px; padding: 3rem 2rem; background-color: #F9FAFB; transition: all 0.3s; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 [data-testid="stFileUploader"]:hover { border-color: #2563EB; background-color: #EFF6FF; }
-[data-testid="stFileUploader"]::before { font-family: "Font Awesome 6 Free"; font-weight: 900; content: "\\f0ee"; font-size: 3rem; color: #2563EB; display: block; margin-bottom: 1rem; }
-[data-testid="stFileUploader"] section > div > span, [data-testid="stFileUploader"] small { display: none; }
+[data-testid="stFileUploader"]::before { content: "\\f0ee"; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 3rem; color: #2563EB; margin-bottom: 15px; display: block; }
+[data-testid="stFileUploader"]::after { content: "Kéo thả hoặc chọn file Word (.docx) \\A Giới hạn 200MB/file • Hỗ trợ DOCX"; white-space: pre-wrap; font-size: 1rem; font-weight: 600; color: #4B5563; margin-top: 10px; margin-bottom: 15px; display: block; }
+[data-testid="stFileUploader"] section > div > span, [data-testid="stFileUploader"] small { display: none !important; }
 [data-testid="stFileUploader"] button { display: inline-block; background: #E5E7EB; color: #374151; border: none; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; margin-top: 10px; }
 div.stButton > button { display: block; width: 100%; padding: 15px; background-color: #2563EB; color: #FFFFFF; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; margin-top: 20px; cursor: pointer; box-shadow: none; }
 div.stButton > button:hover { background-color: #1D4ED8; color: #FFFFFF; border-color: #1D4ED8; }
