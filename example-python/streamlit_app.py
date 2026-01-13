@@ -550,27 +550,32 @@ def display_pdf_in_iframe(pdf_path):
         st.markdown(f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="700px" style="border:none;border-radius:12px;"></iframe>', unsafe_allow_html=True)
 
 def display_preview(doc: Document):
-    temp_docx = TEMP_DIR / f"preview_{uuid.uuid4()}.docx"
-    temp_pdf = TEMP_DIR / f"preview_{uuid.uuid4()}.pdf"
+    # temp_docx = TEMP_DIR / f"preview_{uuid.uuid4()}.docx"
+    # temp_pdf = TEMP_DIR / f"preview_{uuid.uuid4()}.pdf"
     try:
-        doc.save(str(temp_docx))
-        if CONVERTAPI_SECRET:
-            with st.spinner("🔄 Đang tạo PDF Preview..."):
-                result_pdf = convert_docx_to_pdf_cloud(temp_docx, temp_pdf)
-                if result_pdf and result_pdf.exists():
-                    st.success("✅ PDF Preview sẵn sàng!")
-                    display_pdf_in_iframe(temp_pdf)
-                    return
-        st.info("📄 Hiển thị HTML Preview")
+        # NOTE: Cloud PDF conversion often triggers browser security blocks (data: URI / Mixed Content).
+        # Switching to pure HTML preview for stability.
+        
+        # doc.save(str(temp_docx))
+        # if CONVERTAPI_SECRET:
+        #     with st.spinner("🔄 Đang tạo PDF Preview..."):
+        #         result_pdf = convert_docx_to_pdf_cloud(temp_docx, temp_pdf)
+        #         if result_pdf and result_pdf.exists():
+        #             st.success("✅ PDF Preview sẵn sàng!")
+        #             display_pdf_in_iframe(temp_pdf)
+        #             return
+        
+        st.info("📄 Hiển thị HTML Preview (Nhanh & Ổn định)")
         html_content = docx_to_html(doc)
-        st.components.v1.html(html_content, height=700, scrolling=True)
+        st.components.v1.html(html_content, height=800, scrolling=True)
+        
     except Exception as e:
-        st.error(f"Lỗi: {e}")
-    finally:
-        try:
-            if temp_docx.exists(): temp_docx.unlink()
-            if temp_pdf.exists(): temp_pdf.unlink()
-        except: pass
+        st.error(f"Lỗi Preview: {e}")
+    # finally:
+    #     try:
+    #         if temp_docx.exists(): temp_docx.unlink()
+    #         if temp_pdf.exists(): temp_pdf.unlink()
+    #     except: pass
 
 # ============================================================================
 # MAIN CONTENT
