@@ -59,18 +59,22 @@ st.markdown("""
         --gray-900: #111827;
     }
     
-    /* Hide Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    /* Hide ALL Streamlit branding */
+    #MainMenu {display: none !important;}
+    footer {display: none !important;}
+    header[data-testid="stHeader"] {display: none !important;}
+    .stDeployButton {display: none !important;}
+    [data-testid="stToolbar"] {display: none !important;}
+    [data-testid="stDecoration"] {display: none !important;}
+    [data-testid="stStatusWidget"] {display: none !important;}
     
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
-    /* Main container */
+    /* Main container - Adjust top padding to push content below custom header */
     .block-container {
-        padding-top: 0 !important;
+        padding-top: 5rem !important; /* Adjusted for fixed header */
         padding-left: 2rem !important;
         padding-right: 2rem !important;
         max-width: 100% !important;
