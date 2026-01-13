@@ -2,12 +2,23 @@ import streamlit as st
 import uuid
 from pathlib import Path
 import logging
-from docx import Document
-from app.services.report_formatter import (
-    format_uploaded_stream,
-    docx_to_html,
-)
-from app.config import TEMP_DIR, CONVERTAPI_SECRET
+import sys
+
+# Setup logging first
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+
+# Try to import with error handling for cloud deployment
+try:
+    from docx import Document
+    from app.services.report_formatter import (
+        format_uploaded_stream,
+        docx_to_html,
+    )
+    from app.config import TEMP_DIR, CONVERTAPI_SECRET
+except Exception as e:
+    st.error(f"Import Error: {e}")
+    st.error(f"Python path: {sys.path}")
+    st.stop()
 
 # ============================================================================
 # CẤU HÌNH STREAMLIT
