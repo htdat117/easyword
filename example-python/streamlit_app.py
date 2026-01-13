@@ -598,76 +598,89 @@ with tab1:
     <script>
     (function() {
         function customizeUploader() {
-            // Find the uploader section
-            const uploaders = window.parent.document.querySelectorAll('[data-testid="stFileUploader"]');
-            uploaders.forEach(uploader => {
-                // Hide default SVG icon
-                const svgs = uploader.querySelectorAll('svg');
-                svgs.forEach(svg => { svg.style.display = 'none'; });
+            const doc = window.parent.document;
+            
+            // Target the main dropzone input container and force column layout
+            const dropzoneInputs = doc.querySelectorAll('[data-testid="stFileUploaderDropzoneInput"]');
+            dropzoneInputs.forEach(input => {
+                input.style.display = 'flex';
+                input.style.flexDirection = 'column';
+                input.style.alignItems = 'center';
+                input.style.justifyContent = 'center';
+                input.style.width = '100%';
+                input.style.gap = '10px';
+            });
+            
+            // Style the dropzone container
+            const dropzones = doc.querySelectorAll('[data-testid="stFileUploaderDropzone"]');
+            dropzones.forEach(dz => {
+                dz.style.border = '2px dashed #D1D5DB';
+                dz.style.borderRadius = '12px';
+                dz.style.padding = '50px 20px';
+                dz.style.backgroundColor = '#F9FAFB';
+                dz.style.textAlign = 'center';
+                dz.style.display = 'flex';
+                dz.style.flexDirection = 'column';
+                dz.style.alignItems = 'center';
                 
-                // Find and modify the "Drag and drop" text
+                // Find all direct children and center them
+                Array.from(dz.children).forEach(child => {
+                    child.style.display = 'flex';
+                    child.style.flexDirection = 'column';
+                    child.style.alignItems = 'center';
+                    child.style.width = '100%';
+                });
+            });
+            
+            // Hide default SVG icons
+            const uploaders = doc.querySelectorAll('[data-testid="stFileUploader"]');
+            uploaders.forEach(uploader => {
+                const svgs = uploader.querySelectorAll('svg');
+                svgs.forEach(svg => svg.style.display = 'none');
+                
+                // Replace text and add icon
                 const spans = uploader.querySelectorAll('span');
                 spans.forEach(span => {
                     if (span.textContent.includes('Drag and drop') || span.textContent.includes('drag and drop')) {
                         span.textContent = 'Kéo thả hoặc chọn file Word (.docx)';
-                        span.style.fontSize = '1.1rem';
-                        span.style.fontWeight = '600';
-                        span.style.color = '#111827';
-                        span.style.display = 'block';
-                        span.style.textAlign = 'center';
-                        span.style.marginBottom = '5px';
+                        span.style.cssText = 'font-size:1.1rem;font-weight:600;color:#111827;display:block;text-align:center;margin-bottom:8px;';
                         
-                        // Add custom icon before the text
+                        // Add custom icon
                         if (!uploader.querySelector('.custom-upload-icon')) {
                             const iconDiv = document.createElement('div');
                             iconDiv.className = 'custom-upload-icon';
-                            iconDiv.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" style="font-size: 3rem; color: #2563EB; margin-bottom: 15px;"></i>';
+                            iconDiv.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" style="font-size:3rem;color:#2563EB;margin-bottom:15px;"></i>';
                             iconDiv.style.textAlign = 'center';
+                            iconDiv.style.width = '100%';
                             span.parentElement.insertBefore(iconDiv, span);
                         }
                     }
                 });
                 
-                // Center the Browse button
-                const buttons = uploader.querySelectorAll('button');
-                buttons.forEach(btn => {
-                    btn.style.margin = '15px auto 0 auto';
-                    btn.style.display = 'block';
+                // Center all buttons
+                const btns = uploader.querySelectorAll('button');
+                btns.forEach(btn => {
+                    btn.style.cssText = 'margin:15px auto 0 auto !important;display:block !important;';
                 });
-                
-                // Style the upload dropzone
-                const dropzone = uploader.querySelector('[data-testid="stFileUploaderDropzone"]');
-                if (dropzone) {
-                    dropzone.style.border = '2px dashed #D1D5DB';
-                    dropzone.style.borderRadius = '12px';
-                    dropzone.style.padding = '50px 20px';
-                    dropzone.style.backgroundColor = '#F9FAFB';
-                    dropzone.style.textAlign = 'center';
-                    dropzone.style.display = 'flex';
-                    dropzone.style.flexDirection = 'column';
-                    dropzone.style.alignItems = 'center';
-                    dropzone.style.justifyContent = 'center';
-                }
-                
-                // Center the instructions container
-                const instructions = uploader.querySelector('[data-testid="stFileUploaderDropzoneInstructions"]');
-                if (instructions) {
-                    instructions.style.display = 'flex';
-                    instructions.style.flexDirection = 'column';
-                    instructions.style.alignItems = 'center';
-                    instructions.style.justifyContent = 'center';
-                    instructions.style.textAlign = 'center';
-                    instructions.style.width = '100%';
-                }
-                
-                // Center all inner divs
-                const innerDivs = uploader.querySelectorAll('[data-testid="stFileUploaderDropzone"] > div');
-                innerDivs.forEach(div => {
-                    div.style.display = 'flex';
-                    div.style.flexDirection = 'column';
-                    div.style.alignItems = 'center';
-                    div.style.justifyContent = 'center';
-                    div.style.width = '100%';
+            });
+            
+            // Center tabs
+            const tabLists = doc.querySelectorAll('[data-baseweb="tab-list"]');
+            tabLists.forEach(tl => {
+                tl.style.justifyContent = 'center';
+                tl.style.gap = '15px';
+            });
+        }
+        
+        setTimeout(customizeUploader, 500);
+        setTimeout(customizeUploader, 1500);
+        setTimeout(customizeUploader, 3000);
+        
+        const observer = new MutationObserver(customizeUploader);
+        observer.observe(window.parent.document.body, { childList: true, subtree: true });
+    })();
+    </script>
+    """, height=0)
                 });
             });
             
