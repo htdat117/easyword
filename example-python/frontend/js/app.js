@@ -193,7 +193,7 @@ async function showPreview(isTest = false) {
     if (!previewContainer) return;
 
     previewContainer.style.display = 'block';
-    previewFrame.innerHTML = '<div class="preview-loading"><div class="spinner"></div><p>Đang tạo bản xem trước...</p></div>';
+    previewFrame.innerHTML = '<div class="preview-loading"><div class="spinner"></div><p>Đang tạo bản xem trước PDF...</p></div>';
 
     try {
         let response;
@@ -219,14 +219,8 @@ async function showPreview(isTest = false) {
         const data = await response.json();
 
         if (data.type === 'pdf') {
-            // Render PDF using PDF.js
-            previewFrame.innerHTML = `
-                <iframe 
-                    src="data:application/pdf;base64,${data.content}" 
-                    style="width:100%;height:600px;border:none;border-radius:8px;"
-                    title="PDF Preview">
-                </iframe>
-            `;
+            // Render PDF using PDF.js canvas
+            await renderPDFWithCanvas(data.content, previewFrame);
         } else if (data.type === 'html') {
             // Render HTML content
             previewFrame.innerHTML = `
@@ -237,6 +231,70 @@ async function showPreview(isTest = false) {
         }
     } catch (error) {
         previewFrame.innerHTML = `<p style="text-align:center;color:#DC2626;">Lỗi: ${error.message}</p>`;
+    }
+}
+
+// Load PDF.js library if not already loaded
+async function loadPDFJS() {
+    if (window.pdfjsLib) return;
+
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        script.onload = () => {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            resolve();
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+// Render PDF to canvas using PDF.js
+async function renderPDFWithCanvas(base64Content, container) {
+    try {
+        await loadPDFJS();
+
+        // Convert base64 to Uint8Array
+        const pdfData = atob(base64Content);
+        const pdfArray = new Uint8Array(pdfData.length);
+        for (let i = 0; i < pdfData.length; i++) {
+            pdfArray[i] = pdfData.charCodeAt(i);
+        }
+
+        // Load PDF
+        const pdf = await pdfjsLib.getDocument({ data: pdfArray }).promise;
+
+        // Create container for all pages
+        container.innerHTML = '<div id="pdf-pages" style="max-height:600px;overflow-y:auto;padding:10px;background:#525659;border-radius:8px;"></div>';
+        const pagesContainer = document.getElementById('pdf-pages');
+
+        // Render each page
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const scale = 1.5;
+            const viewport = page.getViewport({ scale });
+
+            // Create canvas for this page
+            const canvas = document.createElement('canvas');
+            canvas.style.display = 'block';
+            canvas.style.margin = '10px auto';
+            canvas.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+
+            const ctx = canvas.getContext('2d');
+
+            // Render page to canvas
+            await page.render({
+                canvasContext: ctx,
+                viewport: viewport
+            }).promise;
+
+            pagesContainer.appendChild(canvas);
+        }
+    } catch (error) {
+        container.innerHTML = `<p style="text-align:center;color:#DC2626;">Lỗi render PDF: ${error.message}</p>`;
     }
 }
 

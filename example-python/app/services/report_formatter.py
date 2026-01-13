@@ -877,7 +877,10 @@ def format_uploaded_stream(file_bytes, filename, options_payload):
     options = merge_options(options_payload)
     doc = Document(BytesIO(file_bytes))
     apply_standard_formatting(doc, options)
-    safe_name = f"formatted-{filename}"
+    # Clean filename - remove trailing underscores and ensure proper extension
+    base_name = filename.rsplit('.', 1)[0] if '.' in filename else filename
+    base_name = base_name.strip().rstrip('_')
+    safe_name = f"formatted-{base_name}.docx"
     return build_report_stream(doc, safe_name)
 
 def docx_to_html(doc: Document) -> str:
