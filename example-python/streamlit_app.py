@@ -39,89 +39,68 @@ except Exception as e:
 
 
 # ============================================================================
-# CSS & ASSETS INJECTION
+# CSS INJECTION - Using separate components to avoid Markdown parsing issues
 # ============================================================================
-st.markdown("""
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+# External fonts and icons
+st.markdown('<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">', unsafe_allow_html=True)
+st.markdown('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">', unsafe_allow_html=True)
+
+# CSS styles - using f-string to avoid markdown parsing issues
+css_styles = """
 <style>
-:root{--primary-color:#2563EB;--primary-dark:#1D4ED8;--text-dark:#1F2937;--text-light:#6B7280;--white:#FFFFFF}
-*{font-family:'Inter',sans-serif}
-body{background-color:#F9FAFB;color:var(--text-dark);line-height:1.6}
-#MainMenu,footer,header[data-testid="stHeader"],.stDeployButton{display:none!important}
-.block-container{padding:0!important;max-width:100%!important}
-
-/* Header */
-.custom-header{background-color:var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.1);position:sticky;top:0;z-index:1000;padding:0}
-.container{max-width:1200px;margin:0 auto;padding:0 20px}
-.nav-wrapper{display:flex;justify-content:space-between;align-items:center;height:70px}
-.logo{font-size:1.5rem;font-weight:700;color:var(--primary-color);display:flex;align-items:center;gap:10px;text-decoration:none}
-.btn-login{color:var(--text-dark);margin-right:15px;text-decoration:none;font-weight:500;padding:8px 16px;border-radius:6px}
-.btn-signup{background-color:var(--primary-color);color:var(--white);text-decoration:none;padding:8px 20px;border-radius:6px;font-weight:500}
-
-/* Hero Section */
-.hero-section{text-align:center;padding:60px 20px 80px;background:linear-gradient(180deg,#FFFFFF 0%,#EFF6FF 100%)}
-.hero-title{font-size:2.5rem;color:#111827;margin-bottom:16px;line-height:1.2;font-weight:700}
-.hero-desc{font-size:1rem;color:var(--text-light);margin-bottom:30px;max-width:600px;margin-left:auto;margin-right:auto}
-
-/* Tool Box - wrapper for Streamlit widgets */
-.tool-box-container{max-width:800px;margin:0 auto;background:var(--white);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.05);padding:30px;border:1px solid #E5E7EB}
-
-/* Streamlit Tabs Override */
-[data-testid="stTabs"]{margin-bottom:20px}
-[data-testid="stTabs"] [data-baseweb="tab-list"]{gap:10px;justify-content:center;border-bottom:none!important;background:transparent}
-[data-testid="stTabs"] button[data-baseweb="tab"]{background:transparent!important;border:none!important;border-bottom:2px solid transparent!important;border-radius:0!important;color:#6B7280!important;font-weight:600!important;padding:10px 20px!important}
-[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"]{color:#2563EB!important;border-bottom-color:#2563EB!important}
-[data-testid="stTabs"] button[data-baseweb="tab"]:hover{color:#2563EB!important}
-[data-testid="stTabs"] [data-baseweb="tab-highlight"]{display:none!important}
-[data-testid="stTabs"] [data-baseweb="tab-border"]{display:none!important}
-
-/* File Uploader Override */
-[data-testid="stFileUploader"]{border:2px dashed #D1D5DB!important;border-radius:12px!important;padding:40px 20px!important;background-color:#F9FAFB!important;text-align:center!important}
-[data-testid="stFileUploader"]:hover{border-color:#2563EB!important;background-color:#EFF6FF!important}
-[data-testid="stFileUploader"] section{padding:0!important;background:transparent!important}
-[data-testid="stFileUploader"] section>div{display:flex!important;flex-direction:column!important;align-items:center!important}
-[data-testid="stFileUploader"] section small{color:#9CA3AF!important;margin-top:10px!important}
-[data-testid="stFileUploader"] button{background:#E5E7EB!important;color:#374151!important;border:1px solid #D1D5DB!important;padding:8px 20px!important;border-radius:8px!important;font-weight:500!important;margin-top:15px!important}
-[data-testid="stFileUploader"] button:hover{background:#D1D5DB!important}
-
-/* Primary Button Override */
-div.stButton>button[kind="primary"],div.stButton>button[data-testid="baseButton-primary"]{width:100%!important;padding:15px!important;background-color:#2563EB!important;color:#FFFFFF!important;border:none!important;border-radius:8px!important;font-size:1rem!important;font-weight:600!important;margin-top:20px!important}
-div.stButton>button[kind="primary"]:hover,div.stButton>button[data-testid="baseButton-primary"]:hover{background-color:#1D4ED8!important}
-
-/* Secondary Button Override */
-div.stButton>button[kind="secondary"],div.stButton>button[data-testid="baseButton-secondary"]{background:#E5E7EB!important;color:#374151!important;border:1px solid #D1D5DB!important}
-
-/* Features Section */
-.features{padding:80px 20px;background-color:var(--white)}
-.feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:30px;max-width:1200px;margin:0 auto}
-.feature-card{padding:25px;border-radius:12px;background:#F8FAFC;border:1px solid transparent}
-.feature-card:hover{transform:translateY(-5px);box-shadow:0 10px 20px rgba(0,0,0,0.05);border-color:#E2E8F0;background:var(--white)}
-.icon-box{width:50px;height:50px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:15px;font-size:1.5rem}
-.bg-blue{background:#DBEAFE;color:#2563EB}
-.bg-green{background:#D1FAE5;color:#059669}
-.bg-purple{background:#EDE9FE;color:#7C3AED}
-.bg-orange{background:#FFEDD5;color:#EA580C}
-.bg-red{background:#FEE2E2;color:#DC2626}
-.bg-teal{background:#CCFBF1;color:#0D9488}
-.feature-h3{font-size:1.1rem;margin-bottom:8px;font-weight:600;color:#1F2937}
-.feature-p{color:var(--text-light);font-size:0.9rem}
-
-/* CTA Section */
-.cta-section{padding:80px 20px;background:linear-gradient(135deg,#2563EB 0%,#1E40AF 100%);color:var(--white);text-align:center}
-.btn-white{display:inline-block;background:var(--white);color:var(--primary-color)!important;padding:15px 40px;border-radius:8px;font-weight:700;text-decoration:none;margin-top:20px}
-
-/* Footer */
-.custom-footer{background-color:#111827;color:#D1D5DB;padding:60px 20px 20px}
-.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;max-width:1200px;margin:0 auto 40px}
-.footer-col h4{color:white;margin-bottom:20px;font-weight:600}
-.footer-col a{color:#9CA3AF;text-decoration:none;display:block;margin-bottom:10px}
-@media(max-width:768px){.footer-grid{grid-template-columns:1fr;text-align:center}.hero-title{font-size:2rem}}
-
-/* Expander */
-[data-testid="stExpander"]{border:1px solid #E5E7EB!important;border-radius:8px!important;margin-top:15px!important}
+* { font-family: 'Inter', sans-serif; }
+body { background-color: #F9FAFB; color: #1F2937; line-height: 1.6; }
+#MainMenu, footer, header[data-testid="stHeader"], .stDeployButton { display: none !important; }
+.block-container { padding: 0 !important; max-width: 100% !important; }
+.custom-header { background-color: #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; padding: 0; }
+.container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.nav-wrapper { display: flex; justify-content: space-between; align-items: center; height: 70px; }
+.logo { font-size: 1.5rem; font-weight: 700; color: #2563EB; display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.btn-login { color: #1F2937; margin-right: 15px; text-decoration: none; font-weight: 500; padding: 8px 16px; border-radius: 6px; }
+.btn-signup { background-color: #2563EB; color: #FFFFFF; text-decoration: none; padding: 8px 20px; border-radius: 6px; font-weight: 500; }
+.hero-section { text-align: center; padding: 60px 20px 80px; background: linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%); }
+.hero-title { font-size: 2.5rem; color: #111827; margin-bottom: 16px; line-height: 1.2; font-weight: 700; }
+.hero-desc { font-size: 1rem; color: #6B7280; margin-bottom: 30px; max-width: 600px; margin-left: auto; margin-right: auto; }
+.tool-box-container { max-width: 800px; margin: 0 auto; background: #FFFFFF; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); padding: 30px; border: 1px solid #E5E7EB; }
+[data-testid="stTabs"] { margin-bottom: 20px; }
+[data-testid="stTabs"] [data-baseweb="tab-list"] { gap: 10px; justify-content: center; border-bottom: none !important; background: transparent; }
+[data-testid="stTabs"] button[data-baseweb="tab"] { background: transparent !important; border: none !important; border-bottom: 2px solid transparent !important; border-radius: 0 !important; color: #6B7280 !important; font-weight: 600 !important; padding: 10px 20px !important; }
+[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] { color: #2563EB !important; border-bottom-color: #2563EB !important; }
+[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #2563EB !important; }
+[data-testid="stTabs"] [data-baseweb="tab-highlight"], [data-testid="stTabs"] [data-baseweb="tab-border"] { display: none !important; }
+[data-testid="stFileUploader"] { border: 2px dashed #D1D5DB !important; border-radius: 12px !important; padding: 40px 20px !important; background-color: #F9FAFB !important; text-align: center !important; }
+[data-testid="stFileUploader"]:hover { border-color: #2563EB !important; background-color: #EFF6FF !important; }
+[data-testid="stFileUploader"] section { padding: 0 !important; background: transparent !important; }
+[data-testid="stFileUploader"] section > div { display: flex !important; flex-direction: column !important; align-items: center !important; }
+[data-testid="stFileUploader"] section small { color: #9CA3AF !important; margin-top: 10px !important; }
+[data-testid="stFileUploader"] button { background: #E5E7EB !important; color: #374151 !important; border: 1px solid #D1D5DB !important; padding: 8px 20px !important; border-radius: 8px !important; font-weight: 500 !important; margin-top: 15px !important; }
+[data-testid="stFileUploader"] button:hover { background: #D1D5DB !important; }
+div.stButton > button[kind="primary"], div.stButton > button[data-testid="baseButton-primary"] { width: 100% !important; padding: 15px !important; background-color: #2563EB !important; color: #FFFFFF !important; border: none !important; border-radius: 8px !important; font-size: 1rem !important; font-weight: 600 !important; margin-top: 20px !important; }
+div.stButton > button[kind="primary"]:hover, div.stButton > button[data-testid="baseButton-primary"]:hover { background-color: #1D4ED8 !important; }
+.features { padding: 80px 20px; background-color: #FFFFFF; }
+.feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; max-width: 1200px; margin: 0 auto; }
+.feature-card { padding: 25px; border-radius: 12px; background: #F8FAFC; border: 1px solid transparent; }
+.feature-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); border-color: #E2E8F0; background: #FFFFFF; }
+.icon-box { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; font-size: 1.5rem; }
+.bg-blue { background: #DBEAFE; color: #2563EB; }
+.bg-green { background: #D1FAE5; color: #059669; }
+.bg-purple { background: #EDE9FE; color: #7C3AED; }
+.bg-orange { background: #FFEDD5; color: #EA580C; }
+.bg-red { background: #FEE2E2; color: #DC2626; }
+.bg-teal { background: #CCFBF1; color: #0D9488; }
+.feature-h3 { font-size: 1.1rem; margin-bottom: 8px; font-weight: 600; color: #1F2937; }
+.feature-p { color: #6B7280; font-size: 0.9rem; }
+.cta-section { padding: 80px 20px; background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%); color: #FFFFFF; text-align: center; }
+.btn-white { display: inline-block; background: #FFFFFF; color: #2563EB !important; padding: 15px 40px; border-radius: 8px; font-weight: 700; text-decoration: none; margin-top: 20px; }
+.custom-footer { background-color: #111827; color: #D1D5DB; padding: 60px 20px 20px; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; max-width: 1200px; margin: 0 auto 40px; }
+.footer-col h4 { color: white; margin-bottom: 20px; font-weight: 600; }
+.footer-col a { color: #9CA3AF; text-decoration: none; display: block; margin-bottom: 10px; }
+[data-testid="stExpander"] { border: 1px solid #E5E7EB !important; border-radius: 8px !important; margin-top: 15px !important; }
 </style>
-""", unsafe_allow_html=True)
+"""
+st.markdown(css_styles, unsafe_allow_html=True)
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -186,7 +165,6 @@ def display_preview(doc: Document):
         except: pass
 
 def process_file(file_bytes, filename):
-    """Process uploaded file and store results in session state"""
     try:
         opts = collect_options()
         stream, name = format_uploaded_stream(file_bytes, filename, opts)
@@ -204,29 +182,12 @@ def process_file(file_bytes, filename):
 # ============================================================================
 
 # 1. HEADER
-st.markdown("""
-<header class="custom-header">
-<div class="container nav-wrapper">
-<a href="#" class="logo"><i class="fa-solid fa-file-word"></i> EasyWord</a>
-<div class="auth-buttons">
-<a href="#" class="btn-login">Đăng nhập</a>
-<a href="#" class="btn-signup">Đăng ký ngay</a>
-</div>
-</div>
-</header>
-""", unsafe_allow_html=True)
+st.markdown('''<header class="custom-header"><div class="container nav-wrapper"><a href="#" class="logo"><i class="fa-solid fa-file-word"></i> EasyWord</a><div class="auth-buttons"><a href="#" class="btn-login">Đăng nhập</a><a href="#" class="btn-signup">Đăng ký ngay</a></div></div></header>''', unsafe_allow_html=True)
 
 # 2. HERO SECTION
-st.markdown("""
-<section class="hero-section">
-<div class="container">
-<h1 class="hero-title">Tạo Tài Liệu Word Chuyên Nghiệp<br>Trong Tích Tắc</h1>
-<p class="hero-desc">Upload file định dạng thô của bạn và để EasyWord xử lý mọi thứ với công nghệ AI tiên tiến. Tiết kiệm 90% thời gian định dạng.</p>
-</div>
-</section>
-""", unsafe_allow_html=True)
+st.markdown('''<section class="hero-section"><div class="container"><h1 class="hero-title">Tạo Tài Liệu Word Chuyên Nghiệp<br>Trong Tích Tắc</h1><p class="hero-desc">Upload file định dạng thô của bạn và để EasyWord xử lý mọi thứ với công nghệ AI tiên tiến. Tiết kiệm 90% thời gian định dạng.</p></div></section>''', unsafe_allow_html=True)
 
-# 3. TOOL BOX - Using actual Streamlit widgets
+# 3. TOOL BOX
 st.markdown('<div class="tool-box-container">', unsafe_allow_html=True)
 
 tab1, tab2 = st.tabs(["☁️ Upload File", "⚡ Test Nhanh"])
@@ -300,79 +261,10 @@ if "result_stream" in st.session_state:
             display_preview(st.session_state["result_doc"])
 
 # 5. FEATURES SECTION
-st.markdown("""
-<section class="features">
-<div style="text-align:center;margin-bottom:50px">
-<h2 style="font-size:2rem;font-weight:700;color:#1F2937;margin-bottom:10px">EasyWord Làm Được Gì?</h2>
-<p style="color:#6B7280">Khám phá các tính năng mạnh mẽ giúp công việc của bạn hiệu quả hơn</p>
-</div>
-<div class="feature-grid">
-<div class="feature-card">
-<div class="icon-box bg-blue"><i class="fa-solid fa-file-lines"></i></div>
-<div class="feature-h3">Tự Động Định Dạng</div>
-<div class="feature-p">AI tự động nhận diện và áp dụng định dạng chuẩn cho tài liệu ngay lập tức.</div>
-</div>
-<div class="feature-card">
-<div class="icon-box bg-green"><i class="fa-solid fa-check-double"></i></div>
-<div class="feature-h3">Kiểm Tra Chính Tả</div>
-<div class="feature-p">Phát hiện và sửa lỗi chính tả, ngữ pháp tự động với độ chính xác cao.</div>
-</div>
-<div class="feature-card">
-<div class="icon-box bg-purple"><i class="fa-solid fa-palette"></i></div>
-<div class="feature-h3">Template Đa Dạng</div>
-<div class="feature-p">Hàng trăm mẫu tài liệu chuyên nghiệp sẵn có cho mọi mục đích.</div>
-</div>
-<div class="feature-card">
-<div class="icon-box bg-orange"><i class="fa-solid fa-sliders"></i></div>
-<div class="feature-h3">Tùy Chỉnh Linh Hoạt</div>
-<div class="feature-p">Điều chỉnh mọi chi tiết theo ý muốn chỉ với vài cú click chuột.</div>
-</div>
-<div class="feature-card">
-<div class="icon-box bg-red"><i class="fa-solid fa-bolt"></i></div>
-<div class="feature-h3">Xử Lý Siêu Nhanh</div>
-<div class="feature-p">Xử lý tài liệu trong vài giây dù file lớn hay phức tạp.</div>
-</div>
-<div class="feature-card">
-<div class="icon-box bg-teal"><i class="fa-solid fa-shield-halved"></i></div>
-<div class="feature-h3">Bảo Mật Tuyệt Đối</div>
-<div class="feature-p">Mọi tài liệu được mã hóa end-to-end, đảm bảo an toàn riêng tư.</div>
-</div>
-</div>
-</section>
-""", unsafe_allow_html=True)
+st.markdown('''<section class="features"><div style="text-align:center;margin-bottom:50px"><h2 style="font-size:2rem;font-weight:700;color:#1F2937;margin-bottom:10px">EasyWord Làm Được Gì?</h2><p style="color:#6B7280">Khám phá các tính năng mạnh mẽ giúp công việc của bạn hiệu quả hơn</p></div><div class="feature-grid"><div class="feature-card"><div class="icon-box bg-blue"><i class="fa-solid fa-file-lines"></i></div><div class="feature-h3">Tự Động Định Dạng</div><div class="feature-p">AI tự động nhận diện và áp dụng định dạng chuẩn cho tài liệu ngay lập tức.</div></div><div class="feature-card"><div class="icon-box bg-green"><i class="fa-solid fa-check-double"></i></div><div class="feature-h3">Kiểm Tra Chính Tả</div><div class="feature-p">Phát hiện và sửa lỗi chính tả, ngữ pháp tự động với độ chính xác cao.</div></div><div class="feature-card"><div class="icon-box bg-purple"><i class="fa-solid fa-palette"></i></div><div class="feature-h3">Template Đa Dạng</div><div class="feature-p">Hàng trăm mẫu tài liệu chuyên nghiệp sẵn có cho mọi mục đích.</div></div><div class="feature-card"><div class="icon-box bg-orange"><i class="fa-solid fa-sliders"></i></div><div class="feature-h3">Tùy Chỉnh Linh Hoạt</div><div class="feature-p">Điều chỉnh mọi chi tiết theo ý muốn chỉ với vài cú click chuột.</div></div><div class="feature-card"><div class="icon-box bg-red"><i class="fa-solid fa-bolt"></i></div><div class="feature-h3">Xử Lý Siêu Nhanh</div><div class="feature-p">Xử lý tài liệu trong vài giây dù file lớn hay phức tạp.</div></div><div class="feature-card"><div class="icon-box bg-teal"><i class="fa-solid fa-shield-halved"></i></div><div class="feature-h3">Bảo Mật Tuyệt Đối</div><div class="feature-p">Mọi tài liệu được mã hóa end-to-end, đảm bảo an toàn riêng tư.</div></div></div></section>''', unsafe_allow_html=True)
 
 # 6. CTA SECTION
-st.markdown("""
-<section class="cta-section">
-<h2 style="font-size:2rem;font-weight:700;margin-bottom:15px">Sẵn Sàng Bắt Đầu?</h2>
-<p style="opacity:0.9">Tham gia hàng nghìn người dùng đang tin dùng EasyWord mỗi ngày.</p>
-<a href="#" class="btn-white">Đăng Ký Miễn Phí Ngay</a>
-</section>
-""", unsafe_allow_html=True)
+st.markdown('''<section class="cta-section"><h2 style="font-size:2rem;font-weight:700;margin-bottom:15px">Sẵn Sàng Bắt Đầu?</h2><p style="opacity:0.9">Tham gia hàng nghìn người dùng đang tin dùng EasyWord mỗi ngày.</p><a href="#" class="btn-white">Đăng Ký Miễn Phí Ngay</a></section>''', unsafe_allow_html=True)
 
 # 7. FOOTER
-st.markdown("""
-<footer class="custom-footer">
-<div class="footer-grid">
-<div class="footer-col">
-<a href="#" class="logo" style="color:#fff;margin-bottom:20px;display:inline-block"><i class="fa-solid fa-file-word"></i> EasyWord</a>
-<p style="font-size:0.9rem;color:#9CA3AF">Giải pháp tạo tài liệu Word thông minh và chuyên nghiệp hàng đầu Việt Nam.</p>
-</div>
-<div class="footer-col">
-<h4>Sản phẩm</h4>
-<a href="#">Tính năng</a><a href="#">Bảng giá</a><a href="#">Templates</a><a href="#">API</a>
-</div>
-<div class="footer-col">
-<h4>Hỗ trợ</h4>
-<a href="#">Trung tâm trợ giúp</a><a href="#">Liên hệ</a><a href="#">Cộng đồng</a>
-</div>
-<div class="footer-col">
-<h4>Pháp lý</h4>
-<a href="#">Điều khoản</a><a href="#">Bảo mật</a><a href="#">Cookie Policy</a>
-</div>
-</div>
-<div style="text-align:center;border-top:1px solid #374151;padding-top:20px;font-size:0.9rem;color:#9CA3AF;max-width:1200px;margin:0 auto">
-© 2026 EasyWord. All rights reserved.
-</div>
-</footer>
-""", unsafe_allow_html=True)
+st.markdown('''<footer class="custom-footer"><div class="footer-grid"><div class="footer-col"><a href="#" class="logo" style="color:#fff;margin-bottom:20px;display:inline-block"><i class="fa-solid fa-file-word"></i> EasyWord</a><p style="font-size:0.9rem;color:#9CA3AF">Giải pháp tạo tài liệu Word thông minh và chuyên nghiệp hàng đầu Việt Nam.</p></div><div class="footer-col"><h4>Sản phẩm</h4><a href="#">Tính năng</a><a href="#">Bảng giá</a><a href="#">Templates</a><a href="#">API</a></div><div class="footer-col"><h4>Hỗ trợ</h4><a href="#">Trung tâm trợ giúp</a><a href="#">Liên hệ</a><a href="#">Cộng đồng</a></div><div class="footer-col"><h4>Pháp lý</h4><a href="#">Điều khoản</a><a href="#">Bảo mật</a><a href="#">Cookie Policy</a></div></div><div style="text-align:center;border-top:1px solid #374151;padding-top:20px;font-size:0.9rem;color:#9CA3AF;max-width:1200px;margin:0 auto">© 2026 EasyWord. All rights reserved.</div></footer>''', unsafe_allow_html=True)
