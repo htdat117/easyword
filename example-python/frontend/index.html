@@ -1,607 +1,220 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chuẩn Hóa Báo Cáo Word</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f6fb;
-            margin: 0;
-            padding: 30px;
-        }
-        h1 {
-            text-align: center;
-            color: #2b2d42;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 24px;
-            margin-top: 30px;
-        }
-        .card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 12px 25px rgba(43, 45, 66, 0.08);
-            border: 1px solid #edf2f7;
-        }
-        label {
-            font-weight: 600;
-            color: #4a4e69;
-            margin-bottom: 6px;
-            display: block;
-        }
-        input,
-        textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #cbd5f5;
-            margin-bottom: 12px;
-            font-size: 14px;
-        }
-        textarea {
-            min-height: 140px;
-            resize: vertical;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-        .note {
-            background: #f0f5ff;
-            border-left: 4px solid #667eea;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #4a4e69;
-            margin-bottom: 16px;
-        }
-        .status {
-            text-align: center;
-            margin-top: 10px;
-            color: #2b2d42;
-            font-size: 14px;
-        }
-        .options-card {
-            grid-column: 1 / -1;
-        }
-        .option-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 12px;
-            margin: 16px 0;
-        }
-        .option-item {
-            display: flex;
-            gap: 8px;
-            align-items: flex-start;
-            font-size: 14px;
-            color: #334155;
-        }
-        .option-item input {
-            margin-top: 3px;
-        }
-        .option-inline {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .option-inline label {
-            margin: 0;
-        }
-        select {
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #cbd5f5;
-            font-size: 14px;
-        }
-        .mini-note {
-            font-size: 13px;
-            color: #6b7280;
-        }
-        .preview-container {
-            background: #f9fafb;
-            border-radius: 8px;
-            padding: 16px;
-        }
-        .preview-info {
-            margin-bottom: 16px;
-        }
-        .preview-info p {
-            margin: 8px 0;
-            color: #334155;
-        }
-        .preview-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .preview-frame-container {
-            animation: fadeIn 0.3s ease-in;
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        h3 {
-            color: #2b2d42;
-            font-size: 18px;
-            margin-bottom: 16px;
-        }
-        /* Modal/Popup styles */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-            animation: fadeIn 0.3s ease-in;
-        }
-        .modal-overlay.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 1200px;
-            height: 90vh;
-            max-height: 900px;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: slideUp 0.3s ease-out;
-        }
-        @keyframes slideUp {
-            from {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        .modal-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid #edf2f7;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .modal-header h3 {
-            margin: 0;
-            color: #2b2d42;
-            font-size: 18px;
-        }
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: #718096;
-            cursor: pointer;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            transition: background 0.2s;
-        }
-        .modal-close:hover {
-            background: #edf2f7;
-            color: #2b2d42;
-        }
-        .modal-body {
-            flex: 1;
-            padding: 0;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        .modal-body iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        .modal-loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #718096;
-            font-size: 16px;
-        }
-        @media (max-width: 600px) {
-            body {
-                padding: 16px;
-            }
-            .preview-actions {
-                flex-direction: column;
-            }
-            .modal-content {
-                width: 95%;
-                height: 95vh;
-            }
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="EasyWord - Công cụ tạo và xử lý tài liệu Word chuyên nghiệp bằng AI trong tích tắc. Tự động định dạng, kiểm tra chính tả và bảo mật tuyệt đối.">
+    <title>EasyWord - Tạo Tài Liệu Word Chuyên Nghiệp</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
 </head>
+
 <body>
-    <h1>📄 Chuẩn Hóa Báo Cáo Word</h1>
-    <div class="grid">
-        <div class="card">
-            <h2>Tạo báo cáo mới</h2>
-            <p class="note">Nhập thông tin để tạo file Word theo mẫu chuẩn.</p>
-            <form id="generateForm">
-                <label for="studentName">Họ tên</label>
-                <input id="studentName" name="studentName" placeholder="Nguyễn Văn A" required />
 
-                <label for="className">Lớp/Khoa</label>
-                <input id="className" name="className" placeholder="Công nghệ thông tin K45" required />
-
-                <label for="reportTitle">Tiêu đề báo cáo</label>
-                <input id="reportTitle" name="reportTitle" placeholder="Báo cáo môn..." required />
-
-                <label for="year">Năm học</label>
-                <input id="year" name="year" placeholder="2024-2025" required />
-
-                <label for="content">Nội dung</label>
-                <textarea id="content" name="content" placeholder="Tóm tắt nội dung..." required></textarea>
-
-                <button type="submit">Tạo file Word</button>
-                <p class="status" id="generateStatus"></p>
-            </form>
+    <header>
+        <div class="container nav-wrapper">
+            <a href="/" class="logo">
+                <i class="fa-solid fa-file-word"></i> EasyWord
+            </a>
+            <div class="auth-buttons">
+                <a href="/login" class="btn btn-login">Đăng nhập</a>
+                <a href="/register" class="btn btn-signup">Đăng ký ngay</a>
+            </div>
         </div>
+    </header>
 
-        <div class="card">
-            <h2>Chuẩn hóa file có sẵn</h2>
-            <p class="note">Tải lên file Word chưa đúng format để hệ thống chuẩn hóa.</p>
-            <form id="formatForm">
-                <label for="reportFile">Chọn file .docx</label>
-                <input type="file" id="reportFile" accept=".docx" required />
-                <button type="submit">Chuẩn hóa file Word</button>
-                <p class="status" id="formatStatus"></p>
-            </form>
-            
-            <!-- Preview Section -->
-            <div id="previewSection" style="display: none; margin-top: 24px; padding-top: 24px; border-top: 2px solid #edf2f7;">
-                <h3 style="margin-top: 0; color: #2b2d42;">Xem trước file đã chuẩn hóa</h3>
-                <div class="preview-container">
-                    <div class="preview-info">
-                        <p><strong>File:</strong> <span id="previewFilename"></span></p>
-                        <p class="mini-note">File đã được chuẩn hóa thành công. Bạn có thể xem trước trước khi tải về.</p>
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1>Tạo Tài Liệu Word Chuyên Nghiệp<br>Trong Tích Tắc</h1>
+                <p>Upload file định dạng thô của bạn và để EasyWord xử lý mọi thứ với công nghệ AI tiên tiến. Tiết kiệm
+                    90% thời gian định dạng.</p>
+
+                <div class="tool-box">
+                    <div class="tabs">
+                        <button class="tab-btn active" data-tab="upload"><i class="fa-solid fa-cloud-arrow-up"></i>
+                            Upload File</button>
+                        <button class="tab-btn" data-tab="test"><i class="fa-solid fa-bolt"></i> Test Nhanh</button>
                     </div>
-                    <div class="preview-actions">
-                        <button id="previewBtn" type="button" style="background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); margin-bottom: 12px;">
-                            👁️ Xem trước
+
+                    <!-- Upload Tab Content -->
+                    <div class="tab-content active" id="upload-tab">
+                        <div class="upload-area" id="drop-zone">
+                            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                            <h3>Kéo thả hoặc chọn file Word (.docx)</h3>
+                            <p style="font-size: 0.9rem; color: #9CA3AF; margin-top: 5px;">Giới hạn 200MB/file • Hỗ trợ
+                                DOCX</p>
+                            <input type="file" id="file-input" accept=".docx" hidden>
+                            <button class="btn btn-browse"
+                                onclick="document.getElementById('file-input').click()">Browse File</button>
+                        </div>
+                        <div id="file-info" class="file-info" style="display: none;">
+                            <i class="fa-solid fa-file-word"></i>
+                            <span id="file-name"></span>
+                            <button class="btn-remove" onclick="removeFile()"><i class="fa-solid fa-times"></i></button>
+                        </div>
+                        <button class="btn-action" id="process-btn" onclick="processFile()">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Bắt đầu xử lý ngay
                         </button>
-                        <button id="downloadBtn" type="button" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
-                            ⬇️ Tải file về máy
+                    </div>
+
+                    <!-- Test Tab Content -->
+                    <div class="tab-content" id="test-tab">
+                        <div class="test-info">
+                            <i class="fa-solid fa-lightbulb"
+                                style="font-size: 2rem; color: #F59E0B; margin-bottom: 15px;"></i>
+                            <h3>Dùng file mẫu để kiểm tra nhanh</h3>
+                            <p style="color: #6B7280; margin-top: 10px;">Hệ thống sẽ xử lý file mẫu có sẵn và trả về kết
+                                quả ngay lập tức</p>
+                        </div>
+                        <button class="btn-action" onclick="runTest()">
+                            <i class="fa-solid fa-rocket"></i> Chạy Test Ngay
+                        </button>
+                    </div>
+
+                    <!-- Processing Indicator -->
+                    <div id="processing" class="processing" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Đang xử lý tài liệu của bạn...</p>
+                    </div>
+
+                    <!-- Result Section -->
+                    <div id="result" class="result-section" style="display: none;">
+                        <div class="result-header">
+                            <i class="fa-solid fa-circle-check" style="color: #059669; font-size: 1.5rem;"></i>
+                            <h3>Xử lý thành công!</h3>
+                        </div>
+                        <div class="result-file">
+                            <i class="fa-solid fa-file-word" style="font-size: 2rem; color: #2563EB;"></i>
+                            <span id="result-filename">formatted-document.docx</span>
+                        </div>
+                        <button class="btn-action" id="download-btn">
+                            <i class="fa-solid fa-download"></i> Tải xuống
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div class="card options-card">
-            <h2>Tùy chọn định dạng UEL</h2>
-            <p class="mini-note">Áp dụng cho cả việc tạo mẫu mới và chuẩn hóa file tải lên.</p>
-            <div class="option-grid">
-                <label class="option-item">
-                    <input type="checkbox" id="optClean" checked />
-                    <span>Xóa dòng trống & dấu cách thừa</span>
-                </label>
-                <label class="option-item">
-                    <input type="checkbox" id="optFont" checked />
-                    <span>Áp dụng font Times New Roman 13pt / 14pt</span>
-                </label>
-                <label class="option-item">
-                    <input type="checkbox" id="optMargins" checked />
-                    <span>Thiết lập lề chuẩn UEL (Trái 3.5cm, Phải 2cm, Trên/Dưới 2.5cm)</span>
-                </label>
-                <label class="option-item">
-                    <input type="checkbox" id="optSpacing" checked />
-                    <span>Thụt đầu dòng 1cm và giãn dòng 1.3</span>
-                </label>
-                <label class="option-item">
-                    <input type="checkbox" id="optHeading" checked />
-                    <span>Nhận diện & chuẩn hóa tiêu đề</span>
-                </label>
-                <label class="option-item">
-                    <input type="checkbox" id="optTables" checked />
-                    <span>Chuẩn hóa định dạng trong bảng</span>
-                </label>
-                <label class="option-item">
-                    <input type="checkbox" id="optToc" checked />
-                    <span>Chèn mục lục tự động</span>
-                </label>
-                <label class="option-item">
-                    <input type="checkbox" id="optPageNumbers" checked />
-                    <span>Đánh số trang ở giữa chân trang</span>
-                </label>
-            </div>
-            <div class="option-inline">
-                <label for="optPageStyle">Kiểu số trang:</label>
-                <select id="optPageStyle">
-                    <option value="arabic">Số Ả Rập (1,2,3...)</option>
-                    <option value="roman">Số La Mã (i, ii, iii...)</option>
-                </select>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal/Popup for PDF Preview -->
-    <div id="previewModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Xem trước file đã chuẩn hóa</h3>
-                <button class="modal-close" id="closeModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="modal-loading" id="modalLoading">
-                    Đang tải file PDF...
+        <section class="features">
+            <div class="container">
+                <div class="section-title">
+                    <h2>EasyWord Làm Được Gì?</h2>
+                    <p>Khám phá các tính năng mạnh mẽ giúp công việc của bạn hiệu quả hơn</p>
                 </div>
-                <iframe id="pdfViewer" style="display: none;"></iframe>
+
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="icon-box bg-blue">
+                            <i class="fa-solid fa-file-lines"></i>
+                        </div>
+                        <h3>Tự Động Định Dạng</h3>
+                        <p>AI tự động nhận diện và áp dụng định dạng chuẩn (Heading, Paragraph, List) cho tài liệu của
+                            bạn ngay lập tức.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon-box bg-green">
+                            <i class="fa-solid fa-check-double"></i>
+                        </div>
+                        <h3>Kiểm Tra Chính Tả</h3>
+                        <p>Phát hiện và sửa lỗi chính tả, ngữ pháp tự động với độ chính xác cao dành cho Tiếng Việt.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon-box bg-purple">
+                            <i class="fa-solid fa-palette"></i>
+                        </div>
+                        <h3>Template Đa Dạng</h3>
+                        <p>Hàng trăm mẫu tài liệu chuyên nghiệp sẵn có cho mọi mục đích: Báo cáo, CV, Đơn từ, Hợp đồng.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon-box bg-orange">
+                            <i class="fa-solid fa-sliders"></i>
+                        </div>
+                        <h3>Tùy Chỉnh Linh Hoạt</h3>
+                        <p>Điều chỉnh mọi chi tiết theo ý muốn: font chữ, màu sắc, căn lề chỉ với vài cú click chuột.
+                        </p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon-box bg-red">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <h3>Xử Lý Siêu Nhanh</h3>
+                        <p>Xử lý tài liệu trong vài giây dù file lớn hay phức tạp. Không còn chờ đợi.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="icon-box bg-teal">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h3>Bảo Mật Tuyệt Đối</h3>
+                        <p>Mọi tài liệu được mã hóa end-to-end, đảm bảo an toàn riêng tư. File tự hủy sau 24h.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta-section">
+            <div class="container cta-content">
+                <h2>Sẵn Sàng Bắt Đầu?</h2>
+                <p>Tham gia hàng nghìn người dùng đang tin dùng EasyWord mỗi ngày để tối ưu hóa công việc.</p>
+                <a href="/register" class="btn-white">Đăng Ký Miễn Phí Ngay</a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <a href="/" class="logo" style="color: #fff; margin-bottom: 20px; display: inline-block;">
+                        <i class="fa-solid fa-file-word"></i> EasyWord
+                    </a>
+                    <p style="font-size: 0.9rem; color: #9CA3AF;">Giải pháp tạo tài liệu Word thông minh và chuyên
+                        nghiệp hàng đầu Việt Nam.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Sản phẩm</h4>
+                    <ul>
+                        <li><a href="#">Tính năng</a></li>
+                        <li><a href="#">Bảng giá</a></li>
+                        <li><a href="#">Templates</a></li>
+                        <li><a href="#">API</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Hỗ trợ</h4>
+                    <ul>
+                        <li><a href="#">Trung tâm trợ giúp</a></li>
+                        <li><a href="#">Liên hệ</a></li>
+                        <li><a href="#">Cộng đồng</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Pháp lý</h4>
+                    <ul>
+                        <li><a href="#">Điều khoản</a></li>
+                        <li><a href="#">Bảo mật</a></li>
+                        <li><a href="#">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                &copy; 2026 EasyWord. All rights reserved.
             </div>
         </div>
-    </div>
+    </footer>
 
-    <script>
-        const API_BASE = '';
-        const optionMap = {
-            clean_whitespace: 'optClean',
-            normalize_font: 'optFont',
-            adjust_margins: 'optMargins',
-            indent_spacing: 'optSpacing',
-            heading_detection: 'optHeading',
-            format_tables: 'optTables',
-            insert_toc: 'optToc',
-            add_page_numbers: 'optPageNumbers'
-        };
+    <script src="/static/js/app.js"></script>
 
-        const collectOptions = () => {
-            const options = {};
-            Object.entries(optionMap).forEach(([key, id]) => {
-                const el = document.getElementById(id);
-                options[key] = el ? el.checked : true;
-            });
-            options.page_number_style = document.getElementById('optPageStyle').value;
-            return options;
-        };
-
-        async function downloadBlob(response, prefix) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${prefix}-${Date.now()}.docx`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }
-
-        const generateForm = document.getElementById('generateForm');
-        const generateStatus = document.getElementById('generateStatus');
-        generateForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            generateStatus.textContent = 'Đang tạo file...';
-            const button = generateForm.querySelector('button');
-            button.disabled = true;
-
-            const payload = {
-                studentName: generateForm.studentName.value,
-                className: generateForm.className.value,
-                reportTitle: generateForm.reportTitle.value,
-                year: generateForm.year.value,
-                content: generateForm.content.value,
-                options: collectOptions()
-            };
-
-            try {
-                const response = await fetch(`${API_BASE}/api/generate-report`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error('Không thể tạo báo cáo');
-                }
-
-                await downloadBlob(response, 'bao-cao-mau');
-                generateStatus.textContent = '✅ Đã tạo file thành công!';
-                generateForm.reset();
-            } catch (error) {
-                generateStatus.textContent = `❌ ${error.message}`;
-            } finally {
-                button.disabled = false;
-            }
-        });
-
-        const formatForm = document.getElementById('formatForm');
-        const formatStatus = document.getElementById('formatStatus');
-        const previewSection = document.getElementById('previewSection');
-        const previewFilename = document.getElementById('previewFilename');
-        const previewBtn = document.getElementById('previewBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
-
-        let currentPreviewData = null;
-
-        formatForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const fileInput = document.getElementById('reportFile');
-            if (!fileInput.files.length) {
-                formatStatus.textContent = '❌ Vui lòng chọn file';
-                return;
-            }
-
-            formatStatus.textContent = 'Đang chuẩn hóa file...';
-            const button = formatForm.querySelector('button');
-            button.disabled = true;
-            
-            // Ẩn preview section nếu có
-            previewSection.style.display = 'none';
-
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            formData.append('options', JSON.stringify(collectOptions()));
-
-            try {
-                const response = await fetch(`${API_BASE}/api/format-report`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.error || 'Không thể chuẩn hóa file');
-                }
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    formatStatus.textContent = '✅ Đã chuẩn hóa xong!';
-                    currentPreviewData = result;
-                    
-                    // Hiển thị preview section
-                    previewFilename.textContent = result.filename || 'bao-cao-chuan.docx';
-                    previewSection.style.display = 'block';
-                    
-                    // Reset form file input nhưng giữ lại thông tin
-                    fileInput.value = '';
-                } else {
-                    throw new Error('Không thể chuẩn hóa file');
-                }
-            } catch (error) {
-                formatStatus.textContent = `❌ ${error.message}`;
-                previewSection.style.display = 'none';
-            } finally {
-                button.disabled = false;
-            }
-        });
-
-        const previewModal = document.getElementById('previewModal');
-        const pdfViewer = document.getElementById('pdfViewer');
-        const modalLoading = document.getElementById('modalLoading');
-        const closeModal = document.getElementById('closeModal');
-
-        previewBtn.addEventListener('click', async () => {
-            if (!currentPreviewData) return;
-            
-            // Hiển thị modal
-            previewModal.classList.add('active');
-            modalLoading.style.display = 'flex';
-            modalLoading.innerHTML = 'Đang tải file preview...';
-            pdfViewer.style.display = 'none';
-            
-            const previewUrl = `${API_BASE}${currentPreviewData.preview_url}`;
-            
-            try {
-                // Load HTML preview vào iframe
-                pdfViewer.src = previewUrl;
-                
-                // Set timeout để kiểm tra nếu không load được
-                const loadTimeout = setTimeout(() => {
-                    if (pdfViewer.style.display === 'none') {
-                        modalLoading.innerHTML = '⏳ Đang xử lý file. Vui lòng đợi...';
-                    }
-                }, 5000);
-                
-                // Ẩn loading khi HTML đã load
-                pdfViewer.onload = () => {
-                    clearTimeout(loadTimeout);
-                    modalLoading.style.display = 'none';
-                    pdfViewer.style.display = 'block';
-                };
-                
-                pdfViewer.onerror = () => {
-                    clearTimeout(loadTimeout);
-                    modalLoading.style.display = 'flex';
-                    modalLoading.innerHTML = '❌ Không thể tải file preview. Vui lòng thử lại hoặc tải file về máy.';
-                    pdfViewer.style.display = 'none';
-                };
-            } catch (error) {
-                modalLoading.innerHTML = `❌ Lỗi khi tải file preview: ${error.message}`;
-            }
-        });
-
-        // Đóng modal khi click nút X hoặc click ra ngoài
-        closeModal.addEventListener('click', () => {
-            previewModal.classList.remove('active');
-            pdfViewer.src = '';
-        });
-
-        previewModal.addEventListener('click', (e) => {
-            if (e.target === previewModal) {
-                previewModal.classList.remove('active');
-                pdfViewer.src = '';
-            }
-        });
-
-        // Đóng modal bằng phím ESC
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && previewModal.classList.contains('active')) {
-                previewModal.classList.remove('active');
-                pdfViewer.src = '';
-            }
-        });
-
-        downloadBtn.addEventListener('click', async () => {
-            if (!currentPreviewData) return;
-            
-            try {
-                const downloadUrl = `${API_BASE}${currentPreviewData.download_url}?filename=${encodeURIComponent(currentPreviewData.filename)}`;
-                const response = await fetch(downloadUrl);
-                
-                if (!response.ok) {
-                    throw new Error('Không thể tải file');
-                }
-                
-                await downloadBlob(response, 'bao-cao-chuan');
-                formatStatus.textContent = '✅ Đã tải file về máy!';
-            } catch (error) {
-                formatStatus.textContent = `❌ ${error.message}`;
-            }
-        });
-    </script>
 </body>
-</html>
 
+</html>
