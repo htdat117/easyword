@@ -10,11 +10,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 # Try to import with error handling for cloud deployment
 try:
     from docx import Document
-    from app.services.report_formatter import (
-        format_uploaded_stream,
-        docx_to_html,
-    )
-    from app.config import TEMP_DIR, CONVERTAPI_SECRET
+    # from app.services.report_formatter import (
+    #     format_uploaded_stream,
+    #     docx_to_html,
+    # )
+    # from app.config import TEMP_DIR, CONVERTAPI_SECRET
+    st.write("DEBUG: Basic imports passed (docx). App imports temporary disabled.")
 except Exception as e:
     st.error(f"Import Error: {e}")
     st.error(f"Python path: {sys.path}")
