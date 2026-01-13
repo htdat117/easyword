@@ -188,14 +188,14 @@ body {
     display: none !important;
 }
 
-/* File Uploader Override - Match .upload-area */
+/* File Uploader Override - Match .upload-area from TEST.HTML */
 [data-testid="stFileUploader"] {
     border: 2px dashed #D1D5DB !important;
     border-radius: 12px !important;
     padding: 50px 20px !important;
     text-align: center !important;
     cursor: pointer !important;
-    transition: border-color 0.3s !important;
+    transition: all 0.3s !important;
     background-color: #F9FAFB !important;
 }
 
@@ -204,51 +204,81 @@ body {
     background-color: #EFF6FF !important;
 }
 
+/* Hide the label */
 [data-testid="stFileUploader"] > label { display: none !important; }
 
+/* Style the section container */
 [data-testid="stFileUploader"] section {
     background: transparent !important;
     border: none !important;
     padding: 0 !important;
 }
 
+/* Hide default Streamlit uploader content completely */
+[data-testid="stFileUploader"] section [data-testid="stFileUploaderDropzone"] {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+/* Hide the default SVG icon */
+[data-testid="stFileUploader"] section svg {
+    display: none !important;
+}
+
+/* Hide default "Drag and drop" text */
+[data-testid="stFileUploader"] section [data-testid="stFileUploaderDropzoneInstructions"] > div > span {
+    display: none !important;
+}
+
+/* Center everything in the uploader */
 [data-testid="stFileUploader"] section > div {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
+    justify-content: center !important;
 }
 
-/* Icon for uploader */
-[data-testid="stFileUploader"] section > div::before {
+/* Custom Icon using Font Awesome */
+[data-testid="stFileUploader"] section [data-testid="stFileUploaderDropzoneInstructions"]::before {
     content: "\\f0ee";
     font-family: "Font Awesome 6 Free";
     font-weight: 900;
     font-size: 3rem;
     color: var(--primary-color);
+    display: block;
     margin-bottom: 15px;
 }
 
-[data-testid="stFileUploader"] section > div > span {
-    font-size: 1.1rem !important;
-    font-weight: 600 !important;
-    color: #111827 !important;
+/* Custom Title Text */
+[data-testid="stFileUploader"] section [data-testid="stFileUploaderDropzoneInstructions"]::after {
+    content: "Kéo thả hoặc chọn file Word (.docx)";
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #111827;
+    display: block;
+    margin-bottom: 5px;
 }
 
+/* Style the small text */
 [data-testid="stFileUploader"] section small {
     font-size: 0.9rem !important;
     color: #9CA3AF !important;
     margin-top: 5px !important;
+    display: block !important;
 }
 
+/* Browse Files Button - centered */
 [data-testid="stFileUploader"] button {
     background: #E5E7EB !important;
     color: #374151 !important;
-    margin-top: 15px !important;
+    margin: 15px auto 0 auto !important;
     font-size: 0.9rem !important;
     padding: 8px 16px !important;
     border: none !important;
     border-radius: 6px !important;
     font-weight: 500 !important;
+    display: block !important;
 }
 
 [data-testid="stFileUploader"] button:hover {
