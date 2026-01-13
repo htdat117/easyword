@@ -598,6 +598,7 @@ st.markdown(f"""
 </div>
 <div class="main-content"></div>
 """, unsafe_allow_html=True)
+
 def collect_options():
     return {
         "clean_whitespace": st.session_state.get("opt_clean", True),
@@ -818,9 +819,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Centered upload
-col_upload = st.columns([1, 3, 1])[1]
+col_upload = st.columns([1, 4, 1])[1]
 with col_upload:
-    uploaded_file = st.file_uploader("Kéo thả hoặc chọn file Word (.docx)", type=["docx"])
+    uploaded_file = st.file_uploader("Kéo thả hoặc chọn file Word (.docx)", type=["docx"], label_visibility="collapsed")
+    if uploaded_file:
+        st.success(f"✅ Đã chọn: **{uploaded_file.name}**")
 
 # Options Section (Collapsible)
 with st.expander("⚙️ Tùy chỉnh định dạng", expanded=False):
@@ -838,67 +841,51 @@ with st.expander("⚙️ Tùy chỉnh định dạng", expanded=False):
         st.checkbox("🔢 Đánh số trang", value=True, key="opt_page_numbers")
         st.number_input("Giãn dòng", value=1.3, step=0.1, key="line_spacing")
 
-st.markdown("")
+# Process Button
+col_btn = st.columns([1, 2, 1])[1]
+with col_btn:
+    process_clicked = st.button("✨ Bắt đầu xử lý ngay", type="primary", use_container_width=True)
 
-# ==================== QUICK TEST BUTTON ====================
-st.markdown("### ⚡ Test Nhanh")
-col_test1, col_test2 = st.columns([3, 1])
-with col_test1:
-    st.info("📁 Click nút bên cạnh để test nhanh với file `test.docx` mà không cần upload")
-with col_test2:
-    if st.button("🚀 TEST NGAY!", type="primary", use_container_width=True):
-        test_path = Path("test.docx")
-        if test_path.exists():
-            with st.spinner(f"Đang xử lý {test_path.name}..."):
-                try:
-                    with open(test_path, "rb") as f:
-                        file_bytes = f.read()
-                    options = collect_options()
-                    stream, filename = format_uploaded_stream(file_bytes, test_path.name, options)
-                    st.session_state["formatted_stream"] = stream
-                    st.session_state["formatted_filename"] = filename
-                    stream.seek(0)
-                    st.session_state["formatted_doc"] = Document(stream)
-                    st.success("✅ Test thành công!")
-                    st.balloons()
-                except Exception as e:
-                    st.error(f"❌ Lỗi: {e}")
-        else:
-            st.error("❌ File test.docx không tồn tại!")
+# Handle file processing
+if process_clicked and uploaded_file:
+    with st.spinner("Đang xử lý tài liệu..."):
+        try:
+            file_bytes = uploaded_file.read()
+            options = collect_options()
+            stream, filename = format_uploaded_stream(file_bytes, uploaded_file.name, options)
+            st.session_state["formatted_stream"] = stream
+            st.session_state["formatted_filename"] = filename
+            stream.seek(0)
+            st.session_state["formatted_doc"] = Document(stream)
+            st.success("✅ Chuẩn hóa thành công!")
+            st.toast("Xử lý hoàn tất!", icon="🎉")
+        except Exception as e:
+            st.error(f"❌ Lỗi: {e}")
 
-st.markdown("---")
-st.markdown("### 📂 Hoặc Upload File Của Bạn")
-
-# ==================== UPLOAD SECTION ====================
-uploaded_file = st.file_uploader("Kéo thả hoặc chọn file Word (.docx)", type=["docx"])
-
-if uploaded_file:
-    st.success(f"✅ Đã chọn: **{uploaded_file.name}**")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✨ CHUẨN HÓA", type="primary", use_container_width=True):
-            with st.spinner("Đang xử lý..."):
-                try:
-                    file_bytes = uploaded_file.read()
-                    options = collect_options()
-                    stream, filename = format_uploaded_stream(file_bytes, uploaded_file.name, options)
-                    st.session_state["formatted_stream"] = stream
-                    st.session_state["formatted_filename"] = filename
-                    stream.seek(0)
-                    st.session_state["formatted_doc"] = Document(stream)
-                    st.success("✅ Chuẩn hóa thành công!")
-                    st.balloons()
-                except Exception as e:
-                    st.error(f"❌ Lỗi: {e}")
-    
-    with col2:
-        if st.button("🔄 Reset", use_container_width=True):
-            for key in ["formatted_stream", "formatted_filename", "formatted_doc"]:
-                if key in st.session_state:
-                    del st.session_state[key]
-            st.rerun()
-
+# Quick Test Section
+with st.expander("⚡ Test Nhanh với file mẫu", expanded=False):
+    col_test1, col_test2 = st.columns([3, 1])
+    with col_test1:
+        st.info("📁 Click nút bên cạnh để test nhanh với file `test.docx`")
+    with col_test2:
+        if st.button("🚀 TEST NGAY!", use_container_width=True):
+            test_path = Path("test.docx")
+            if test_path.exists():
+                with st.spinner(f"Đang xử lý {test_path.name}..."):
+                    try:
+                        with open(test_path, "rb") as f:
+                            file_bytes = f.read()
+                        options = collect_options()
+                        stream, filename = format_uploaded_stream(file_bytes, test_path.name, options)
+                        st.session_state["formatted_stream"] = stream
+                        st.session_state["formatted_filename"] = filename
+                        stream.seek(0)
+                        st.session_state["formatted_doc"] = Document(stream)
+                        st.success("✅ Test file đã được xử lý thành công!")
+                    except Exception as e:
+                        st.error(f"❌ Lỗi: {e}")
+            else:
+                st.warning("⚠️ File test.docx không tồn tại.")
 
 # ==================== RESULTS SECTION ====================
 if "formatted_stream" in st.session_state:
@@ -924,13 +911,15 @@ if "formatted_stream" in st.session_state:
         if "formatted_doc" in st.session_state:
             display_preview(st.session_state["formatted_doc"])
 
-st.markdown("---")
-
 # ============================================================================
-# FEATURES SECTION (Full Width - Bottom)
+# FEATURES SECTION
 # ============================================================================
-st.markdown("<h2 style='text-align: center; font-size: 2.5rem; font-weight: 800; color: #1e293b; margin-bottom: 0.5rem;'>✨ EasyWord Làm Được Gì?</h2>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #64748b; font-size: 1.125rem; margin-bottom: 2rem;'>Khám phá các tính năng mạnh mẽ giúp công việc của bạn hiệu quả hơn</p>", unsafe_allow_html=True)
+st.markdown("""
+<div class="features-wrapper">
+    <h2 class="features-title">EasyWord Làm Được Gì?</h2>
+    <p class="features-subtitle">Khám phá các tính năng mạnh mẽ giúp công việc của bạn hiệu quả hơn</p>
+</div>
+""", unsafe_allow_html=True)
 
 # Row 1 - 3 features
 col1, col2, col3 = st.columns(3)
@@ -939,7 +928,7 @@ with col1:
     <div class="feature-card">
         <div class="feature-icon icon-blue">📝</div>
         <div class="feature-title">Tự Động Định Dạng</div>
-        <p class="feature-desc">AI tự động nhận diện và áp dụng định dạng chuẩn cho tài liệu của bạn.</p>
+        <p class="feature-desc">AI tự động nhận diện và áp dụng định dạng chuẩn (Heading, Paragraph, List) cho tài liệu của bạn ngay lập tức.</p>
     </div>
     """, unsafe_allow_html=True)
 with col2:
@@ -947,15 +936,15 @@ with col2:
     <div class="feature-card">
         <div class="feature-icon icon-green">✅</div>
         <div class="feature-title">Kiểm Tra Chính Tả</div>
-        <p class="feature-desc">Phát hiện và sửa lỗi chính tả, ngữ pháp tự động với độ chính xác cao.</p>
+        <p class="feature-desc">Phát hiện và sửa lỗi chính tả, ngữ pháp tự động với độ chính xác cao dành cho Tiếng Việt.</p>
     </div>
     """, unsafe_allow_html=True)
 with col3:
     st.markdown("""
     <div class="feature-card">
-        <div class="feature-icon icon-purple">🎨</div>
+        <div class="feature-icon icon-purple">📚</div>
         <div class="feature-title">Template Đa Dạng</div>
-        <p class="feature-desc">Hàng trăm mẫu tài liệu chuyên nghiệp sẵn có cho mọi mục đích.</p>
+        <p class="feature-desc">Hàng trăm mẫu tài liệu chuyên nghiệp sẵn có cho mọi mục đích: Báo cáo, CV, Đơn từ, Hợp đồng.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -968,7 +957,7 @@ with col4:
     <div class="feature-card">
         <div class="feature-icon icon-orange">⚙️</div>
         <div class="feature-title">Tùy Chỉnh Linh Hoạt</div>
-        <p class="feature-desc">Điều chỉnh mọi chi tiết theo ý muốn: font, màu sắc, căn lề...</p>
+        <p class="feature-desc">Điều chỉnh mọi chi tiết theo ý muốn: font chữ, màu sắc, căn lề chỉ với vài click chuột.</p>
     </div>
     """, unsafe_allow_html=True)
 with col5:
@@ -976,7 +965,7 @@ with col5:
     <div class="feature-card">
         <div class="feature-icon icon-red">⚡</div>
         <div class="feature-title">Xử Lý Siêu Nhanh</div>
-        <p class="feature-desc">AI xử lý tài liệu trong vài giây, dù file lớn hay phức tạp.</p>
+        <p class="feature-desc">Xử lý tài liệu trong vài giây dù file lớn hay phức tạp. Không cần chờ đợi.</p>
     </div>
     """, unsafe_allow_html=True)
 with col6:
@@ -984,13 +973,13 @@ with col6:
     <div class="feature-card">
         <div class="feature-icon icon-teal">🔒</div>
         <div class="feature-title">Bảo Mật Tuyệt Đối</div>
-        <p class="feature-desc">Mọi tài liệu được mã hóa end-to-end, đảm bảo an toàn riêng tư.</p>
+        <p class="feature-desc">Mọi tài liệu được mã hóa end-to-end, đảm bảo an toàn riêng tư. File tự hủy sau 24h.</p>
     </div>
     """, unsafe_allow_html=True)
 
-st.markdown("")
-
-# CTA Section
+# ============================================================================
+# CTA SECTION
+# ============================================================================
 st.markdown("""
 <div class="cta-section">
     <h2 class="cta-title">Sẵn Sàng Bắt Đầu?</h2>
@@ -1000,7 +989,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ============================================================================
-# CUSTOM FOOTER (Like HTML)
+# CUSTOM FOOTER
 # ============================================================================
 st.markdown(f"""
 <div class="custom-footer">
@@ -1037,4 +1026,3 @@ st.markdown(f"""
     </div>
 </div>
 """, unsafe_allow_html=True)
-
