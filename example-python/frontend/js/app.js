@@ -183,6 +183,71 @@ function downloadFile() {
 }
 
 // ==========================================================================
+// Preview Functionality
+// ==========================================================================
+
+async function showPreview(isTest = false) {
+    const previewContainer = document.getElementById('preview-container');
+    const previewFrame = document.getElementById('preview-frame');
+
+    if (!previewContainer) return;
+
+    previewContainer.style.display = 'block';
+    previewFrame.innerHTML = '<div class="preview-loading"><div class="spinner"></div><p>Đang tạo bản xem trước...</p></div>';
+
+    try {
+        let response;
+
+        if (isTest) {
+            response = await fetch('/api/preview/test');
+        } else if (selectedFile) {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            response = await fetch('/api/preview', {
+                method: 'POST',
+                body: formData
+            });
+        } else {
+            previewFrame.innerHTML = '<p style="text-align:center;color:#6B7280;">Vui lòng chọn file để xem trước</p>';
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error('Không thể tạo bản xem trước');
+        }
+
+        const data = await response.json();
+
+        if (data.type === 'pdf') {
+            // Render PDF using PDF.js
+            previewFrame.innerHTML = `
+                <iframe 
+                    src="data:application/pdf;base64,${data.content}" 
+                    style="width:100%;height:600px;border:none;border-radius:8px;"
+                    title="PDF Preview">
+                </iframe>
+            `;
+        } else if (data.type === 'html') {
+            // Render HTML content
+            previewFrame.innerHTML = `
+                <div class="html-preview" style="max-height:600px;overflow-y:auto;padding:20px;background:white;border-radius:8px;border:1px solid #E5E7EB;">
+                    ${data.content}
+                </div>
+            `;
+        }
+    } catch (error) {
+        previewFrame.innerHTML = `<p style="text-align:center;color:#DC2626;">Lỗi: ${error.message}</p>`;
+    }
+}
+
+function hidePreview() {
+    const previewContainer = document.getElementById('preview-container');
+    if (previewContainer) {
+        previewContainer.style.display = 'none';
+    }
+}
+
+// ==========================================================================
 // UI Helpers
 // ==========================================================================
 
@@ -191,6 +256,7 @@ function showProcessing() {
     document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
     document.getElementById('processing').style.display = 'block';
     hideResult();
+    hidePreview();
 }
 
 function hideProcessing() {
@@ -210,10 +276,21 @@ function showResult(filename) {
 
     // Setup download button
     document.getElementById('download-btn').onclick = downloadFile;
+
+    // Setup preview button if exists
+    const previewBtn = document.getElementById('preview-btn');
+    if (previewBtn) {
+        previewBtn.onclick = () => {
+            const activeTab = document.querySelector('.tab-btn.active');
+            const isTest = activeTab && activeTab.dataset.tab === 'test';
+            showPreview(isTest);
+        };
+    }
 }
 
 function hideResult() {
     document.getElementById('result').style.display = 'none';
+    hidePreview();
     if (downloadUrl) {
         URL.revokeObjectURL(downloadUrl);
         downloadUrl = null;

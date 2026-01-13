@@ -5,13 +5,17 @@ Serves frontend files and provides API endpoints for document processing.
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 import uuid
 import io
 import sys
+import os
 import logging
+import tempfile
+import requests
+import base64
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -125,11 +129,16 @@ async def process_file(file: UploadFile = File(...)):
         # Return the processed file
         result_stream.seek(0)
         
+        # Clean filename - remove any trailing underscores or special chars
+        clean_name = result_name.strip().rstrip('_')
+        if not clean_name.endswith('.docx'):
+            clean_name = clean_name.rstrip('.') + '.docx'
+        
         return StreamingResponse(
             result_stream,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers={
-                "Content-Disposition": f'attachment; filename="{result_name}"'
+                "Content-Disposition": f'attachment; filename="{clean_name}"'
             }
         )
     except Exception as e:
@@ -159,11 +168,16 @@ async def run_test():
         # Return the processed file
         result_stream.seek(0)
         
+        # Clean filename
+        clean_name = result_name.strip().rstrip('_')
+        if not clean_name.endswith('.docx'):
+            clean_name = clean_name.rstrip('.') + '.docx'
+        
         return StreamingResponse(
             result_stream,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             headers={
-                "Content-Disposition": f'attachment; filename="{result_name}"'
+                "Content-Disposition": f'attachment; filename="{clean_name}"'
             }
         )
     except Exception as e:
@@ -174,6 +188,111 @@ async def run_test():
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "version": "1.0.0"}
+
+# ConvertAPI secret for PDF conversion
+CONVERTAPI_SECRET = os.getenv("CONVERTAPI_SECRET", "")
+
+@app.post("/api/preview")
+async def preview_file(file: UploadFile = File(...)):
+    """
+    Process file and return PDF preview using ConvertAPI.
+    Returns base64 encoded PDF data.
+    """
+    if not file.filename.endswith('.docx'):
+        raise HTTPException(status_code=400, detail="Only .docx files are supported")
+    
+    if not CONVERTAPI_SECRET:
+        # Fallback: return HTML preview
+        try:
+            content = await file.read()
+            from docx import Document
+            from app.services.report_formatter import docx_to_html, apply_standard_formatting, merge_options
+            
+            doc = Document(io.BytesIO(content))
+            options = get_processing_options()
+            apply_standard_formatting(doc, options)
+            html_content = docx_to_html(doc)
+            
+            return JSONResponse({
+                "type": "html",
+                "content": html_content
+            })
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    try:
+        content = await file.read()
+        
+        # Process the file first
+        options = get_processing_options()
+        result_stream, _ = format_uploaded_stream(content, file.filename, options)
+        result_stream.seek(0)
+        
+        # Convert to PDF using ConvertAPI
+        url = f"https://v2.convertapi.com/convert/docx/to/pdf?Secret={CONVERTAPI_SECRET}&download=attachment"
+        files = {'File': ('document.docx', result_stream, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')}
+        response = requests.post(url, files=files, timeout=60)
+        
+        if response.status_code == 200:
+            pdf_base64 = base64.b64encode(response.content).decode('utf-8')
+            return JSONResponse({
+                "type": "pdf",
+                "content": pdf_base64
+            })
+        else:
+            raise HTTPException(status_code=500, detail="PDF conversion failed")
+            
+    except Exception as e:
+        logger.error(f"Preview error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/preview/test")
+async def preview_test():
+    """
+    Preview the test file as PDF.
+    """
+    test_file = Path(__file__).parent.parent / "test.docx"
+    
+    if not test_file.exists():
+        raise HTTPException(status_code=404, detail="Test file not found")
+    
+    try:
+        with open(test_file, 'rb') as f:
+            content = f.read()
+        
+        options = get_processing_options()
+        result_stream, _ = format_uploaded_stream(content, "test_result.docx", options)
+        result_stream.seek(0)
+        
+        if CONVERTAPI_SECRET:
+            # Convert to PDF
+            url = f"https://v2.convertapi.com/convert/docx/to/pdf?Secret={CONVERTAPI_SECRET}&download=attachment"
+            files = {'File': ('document.docx', result_stream, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')}
+            response = requests.post(url, files=files, timeout=60)
+            
+            if response.status_code == 200:
+                pdf_base64 = base64.b64encode(response.content).decode('utf-8')
+                return JSONResponse({
+                    "type": "pdf",
+                    "content": pdf_base64
+                })
+        
+        # Fallback: return HTML preview
+        from docx import Document
+        from app.services.report_formatter import docx_to_html
+        
+        result_stream.seek(0)
+        doc = Document(result_stream)
+        html_content = docx_to_html(doc)
+        
+        return JSONResponse({
+            "type": "html",
+            "content": html_content
+        })
+        
+    except Exception as e:
+        logger.error(f"Preview test error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
 # RUN SERVER
