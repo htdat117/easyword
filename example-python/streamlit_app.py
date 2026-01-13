@@ -280,72 +280,160 @@ st.markdown("""
         line-height: 1.6;
     }
     
-    /* Upload Section */
-    [data-testid="stFileUploader"] {
+    /* Upload Card */
+    .upload-card {
         background: white;
-        border: 3px dashed #cbd5e1;
-        border-radius: 24px;
-        padding: 3rem 2rem;
+        border-radius: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        max-width: 600px;
+        margin: 0 auto 3rem;
+        overflow: hidden;
+    }
+    
+    .upload-tabs {
+        display: flex;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .upload-tab {
+        flex: 1;
+        padding: 1rem;
+        text-align: center;
+        font-weight: 500;
+        color: #64748b;
+        cursor: pointer;
+        border: none;
+        background: transparent;
         transition: all 0.3s ease;
     }
     
-    [data-testid="stFileUploader"]:hover {
-        border-color: var(--primary-blue);
-        background: var(--bg-gradient-start);
-        transform: translateY(-4px);
-        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    .upload-tab.active {
+        color: var(--primary-blue);
+        border-bottom: 2px solid var(--primary-blue);
+        background: #f0f9ff;
     }
     
-    /* Buttons */
-    .stButton > button {
-        background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+    .upload-area {
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .upload-icon {
+        width: 64px;
+        height: 64px;
+        background: #dbeafe;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.5rem;
+    }
+    
+    .upload-text {
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+    
+    .upload-hint {
+        color: #64748b;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+    
+    .browse-btn {
+        background: white;
+        border: 1px solid #d1d5db;
+        color: #374151;
+        padding: 0.5rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    
+    .browse-btn:hover {
+        background: #f9fafb;
+    }
+    
+    .process-btn {
+        display: block;
+        width: calc(100% - 2rem);
+        margin: 0 1rem 1rem;
+        background: var(--primary-blue);
         color: white;
         border: none;
+        padding: 1rem;
         border-radius: 12px;
-        padding: 0.875rem 1.75rem;
         font-weight: 600;
         font-size: 1rem;
+        cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
     }
     
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+    .process-btn:hover {
+        background: var(--primary-blue-dark);
     }
     
-    /* Download button */
-    .stDownloadButton > button {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
-        font-weight: 600;
-    }
-    
-    .stDownloadButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
-    }
-    
-    /* CTA Section - Full Width */
+    /* CTA Section - Full Width Blue */
     .cta-section {
-        background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-light));
-        padding: 3rem 2rem;
-        border-radius: 24px;
+        background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+        padding: 4rem 2rem;
         text-align: center;
         color: white;
-        margin: 2rem 0;
+        margin: 3rem -2rem;
+        width: calc(100% + 4rem);
     }
     
     .cta-title {
         font-size: 2.5rem;
-        font-weight: 800;
+        font-weight: 700;
         margin-bottom: 1rem;
+        font-style: italic;
     }
     
     .cta-subtitle {
-        font-size: 1.125rem;
+        font-size: 1rem;
         opacity: 0.9;
-        margin-bottom: 0;
+        margin-bottom: 2rem;
+    }
+    
+    .cta-btn {
+        background: transparent;
+        border: 2px solid white;
+        color: white;
+        padding: 0.875rem 2rem;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .cta-btn:hover {
+        background: white;
+        color: var(--primary-blue);
+    }
+    
+    /* Feature Section Background */
+    .features-wrapper {
+        background: #f8fafc;
+        padding: 4rem 2rem;
+        margin: 2rem -2rem;
+        width: calc(100% + 4rem);
+    }
+    
+    .features-title {
+        text-align: center;
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+    
+    .features-subtitle {
+        text-align: center;
+        color: #64748b;
+        margin-bottom: 3rem;
     }
     
     /* Custom Footer - FULL WIDTH */
@@ -704,30 +792,35 @@ def display_preview(doc: Document):
 # MAIN CONTENT
 # ============================================================================
 
-# Hero Section
+# Hero Section (Clean, centered)
 st.markdown("""
-<div class="hero-container">
-    <h1 class="hero-title">Tạo Tài Liệu Word<br>Chuyên Nghiệp Trong Tích Tắc</h1>
-    <p class="hero-subtitle">Upload file định dạng của bạn và để EasyWord xử lý mọi thứ với công nghệ AI tiên tiến</p>
+<div style="text-align: center; padding: 2rem 0 1rem;">
+    <h1 style="font-size: 3rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; line-height: 1.2;">
+        Tạo Tài Liệu Word Chuyên Nghiệp<br>Trong Tích Tắc
+    </h1>
+    <p style="font-size: 1.125rem; color: #64748b; max-width: 600px; margin: 0 auto;">
+        Upload file định dạng thô của bạn và để EasyWord xử lý mọi thứ với công nghệ AI tiên tiến. Tiết kiệm 90% thời gian định dạng.
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
+# UPLOAD & PROCESSING SECTION
 # ============================================================================
-# HƯỚNG DẪN SỬ DỤNG (Moved to top)
-# ============================================================================
-st.markdown("### 📖 Hướng dẫn sử dụng")
+
+# Upload tabs (visual only - functionality via Streamlit)
 st.markdown("""
-1. Upload file Word (.docx) của bạn bên dưới
-2. Tùy chỉnh các options định dạng (nếu cần)
-3. Nhấn **Chuẩn Hóa** và tải file kết quả về
-""")
+<div class="upload-card" style="max-width: 600px; margin: 0 auto 1rem;">
+    <div class="upload-tabs">
+        <div class="upload-tab active">📤 Upload File</div>
+        <div class="upload-tab">⚡ Test Nhanh</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-st.markdown("---")
-
-# ============================================================================
-# UPLOAD & PROCESSING SECTION (Moved to top)
-# ============================================================================
-st.markdown("## 📤 Upload & Xử Lý Tài Liệu")
+# Centered upload
+col_upload = st.columns([1, 3, 1])[1]
+with col_upload:
+    uploaded_file = st.file_uploader("Kéo thả hoặc chọn file Word (.docx)", type=["docx"])
 
 # Options Section (Collapsible)
 with st.expander("⚙️ Tùy chỉnh định dạng", expanded=False):
@@ -901,7 +994,8 @@ st.markdown("")
 st.markdown("""
 <div class="cta-section">
     <h2 class="cta-title">Sẵn Sàng Bắt Đầu?</h2>
-    <p class="cta-subtitle">Tham gia hàng nghìn người dùng đang tin dùng EasyWord mỗi ngày</p>
+    <p class="cta-subtitle">Tham gia hàng nghìn người dùng đang tin dùng EasyWord mỗi ngày để tối ưu hóa công việc.</p>
+    <button class="cta-btn">Đăng Ký Miễn Phí Ngay</button>
 </div>
 """, unsafe_allow_html=True)
 
