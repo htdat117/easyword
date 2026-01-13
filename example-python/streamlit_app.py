@@ -3,12 +3,14 @@ import uuid
 from pathlib import Path
 import logging
 import sys
+import base64
+import os
 
 # ============================================================================
-# CẤU HÌNH STREAMLIT (MUST BE FIRST)
+# CẤU HÌNH STREAMLIT
 # ============================================================================
 st.set_page_config(
-    page_title="EasyWord - Tạo Tài Liệu Word Thông Minh",
+    page_title="EasyWord - Tạo Tài Liệu Word Chuyên Nghiệp",
     page_icon="📄",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -37,568 +39,278 @@ except Exception as e:
 
 
 # ============================================================================
-# CSS - EASYWORD BLUE THEME (MATCHING HTML)
+# CSS & ASSETS INJECTION
 # ============================================================================
 st.markdown("""
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-    
     :root {
-        --primary-blue: #2563eb;
-        --primary-blue-dark: #1d4ed8;
-        --primary-blue-light: #3b82f6;
-        --bg-gradient-start: #f0f9ff;
-        --bg-gradient-end: #e0f2fe;
-        --white: #ffffff;
-        --gray-50: #f9fafb;
-        --gray-100: #f3f4f6;
-        --gray-200: #e5e7eb;
-        --gray-300: #d1d5db;
-        --gray-500: #6b7280;
-        --gray-700: #374151;
-        --gray-900: #111827;
+        --primary-color: #2563EB;
+        --primary-dark: #1D4ED8;
+        --secondary-color: #F3F4F6;
+        --text-dark: #1F2937;
+        --text-light: #6B7280;
+        --white: #FFFFFF;
+        --accent: #F59E0B;
     }
-    
-    /* Hide ALL Streamlit branding */
-    #MainMenu {display: none !important;}
-    footer {display: none !important;}
-    header[data-testid="stHeader"] {display: none !important;}
-    .stDeployButton {display: none !important;}
-    [data-testid="stToolbar"] {display: none !important;}
-    [data-testid="stDecoration"] {display: none !important;}
-    [data-testid="stStatusWidget"] {display: none !important;}
-    
-    html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    * {
+        font-family: 'Inter', sans-serif;
     }
-    
-    /* Main container - Adjust top padding to push content below custom header */
-    .block-container {
-        padding-top: 5rem !important; /* Adjusted for fixed header */
-        padding-left: 2rem !important;
-        padding-right: 2rem !important;
-        max-width: 100% !important;
-        background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
-    }
-    
-    /* Custom Header - Fixed at top */
-    .custom-header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-        z-index: 1000;
-        padding: 1rem 0;
-    }
-    
-    .header-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    
-    .logo-section {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        cursor: pointer;
-    }
-    
-    .logo-img {
-        height: 48px;
-        width: 48px;
-        border-radius: 12px;
-        object-fit: cover;
-    }
-    
-    .logo-text {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--primary-blue);
-        margin: 0;
-    }
-    
-    .header-buttons {
-        display: flex;
-        gap: 1rem;
-    }
-    
-    .btn-login {
-        background: transparent;
-        color: var(--gray-700);
-        border: 2px solid var(--gray-300);
-        padding: 0.75rem 1.5rem;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 0.9375rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-    }
-    
-    .btn-login:hover {
-        background: var(--gray-50);
-        border-color: var(--gray-500);
-    }
-    
-    .btn-register {
-        background: var(--primary-blue);
-        color: white;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 0.9375rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    }
-    
-    .btn-register:hover {
-        background: var(--primary-blue-dark);
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    }
-    
-    /* Add spacing for fixed header */
-    .main-content {
-        margin-top: 100px;
-    }
-    
-    /* Hero Section */
-    .hero-container {
-        text-align: center;
-        padding: 3rem 2rem;
-        background: white;
-        border-radius: 24px;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    
-    .hero-title {
-        font-size: 3.5rem;
-        font-weight: 800;
-        color: #1e293b;
-        margin-bottom: 1rem;
-        line-height: 1.1;
-    }
-    
-    .hero-subtitle {
-        font-size: 1.25rem;
-        color: #64748b;
-        max-width: 700px;
-        margin: 0 auto 2rem;
+
+    body {
+        background-color: #F9FAFB;
+        color: var(--text-dark);
         line-height: 1.6;
     }
-    
-    /* Features Section (Full Width) */
-    .features-section {
-        background: white;
-        padding: 3rem 2rem;
-        border-radius: 24px;
-        margin: 2rem 0;
+
+    /* Hide Streamlit Branding */
+    #MainMenu, footer, header[data-testid="stHeader"], .stDeployButton {
+        display: none !important;
     }
     
-    /* Feature Cards */
+    .block-container {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        max-width: 100% !important;
+    }
+
+    /* --- Header / Navigation --- */
+    .custom-header {
+        background-color: var(--white);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        padding: 0;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .nav-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 70px;
+    }
+
+    .logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+    }
+
+    /* Auth Buttons */
+    .btn-login {
+        color: var(--text-dark);
+        margin-right: 15px;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 8px 16px;
+        border-radius: 6px;
+    }
+
+    .btn-signup {
+        background-color: var(--primary-color);
+        color: var(--white);
+        text-decoration: none;
+        padding: 8px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: background 0.3s;
+    }
+    .btn-signup:hover { background: var(--primary-dark); color: white; }
+
+    /* --- Hero Section & Tool Area --- */
+    .hero {
+        text-align: center;
+        padding: 80px 0 60px;
+        background: linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%);
+    }
+
+    .hero-title {
+        font-size: 3rem;
+        color: #111827;
+        margin-bottom: 16px;
+        line-height: 1.2;
+        font-weight: 700;
+    }
+
+    .hero-desc {
+        font-size: 1.125rem;
+        color: var(--text-light);
+        margin-bottom: 40px;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Tool Box Wrapper */
+    .tool-box-wrapper {
+        background: var(--white);
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        padding: 30px;
+        max-width: 800px;
+        margin: 0 auto;
+        border: 1px solid #E5E7EB;
+    }
+
+    /* Streamlit File Uploader Customization */
+    [data-testid="stFileUploader"] {
+        border: 2px dashed #D1D5DB;
+        border-radius: 12px;
+        padding: 2rem;
+        background-color: #F9FAFB;
+        transition: all 0.3s;
+    }
+    
+    [data-testid="stFileUploader"]:hover {
+        border-color: var(--primary-color);
+        background-color: #EFF6FF;
+    }
+    
+    [data-testid="stFileUploader"] section {
+        background-color: transparent !important;
+    }
+    
+    /* Process Button */
+    div.stButton > button {
+        display: block;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background-color: var(--primary-color);
+        color: var(--white);
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-top: 10px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    
+    div.stButton > button:hover {
+        background-color: var(--primary-dark);
+        color: white;
+        border-color: var(--primary-dark);
+    }
+    
+    div.stButton > button:active {
+        color: white;
+    }
+
+    /* --- Features Section --- */
+    .features {
+        padding: 80px 0;
+        background-color: var(--white);
+    }
+
     .feature-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.5rem;
-        margin: 2rem 0;
+        gap: 30px;
     }
-    
-    .feature-grid-full {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-        margin: 0 auto;
-        max-width: 1200px;
-    }
-    
-    @media (max-width: 992px) {
-        .feature-grid-full {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-    
-    @media (max-width: 600px) {
-        .feature-grid-full {
-            grid-template-columns: 1fr;
-        }
-    }
-    
+
     .feature-card {
-        background: white;
-        border-radius: 20px;
-        padding: 2rem;
-        transition: all 0.3s ease;
-        border: 2px solid transparent;
-    }
-    
-    .feature-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 12px 24px rgba(0,0,0,0.1);
-        border-color: var(--primary-blue-light);
-    }
-    
-    .feature-icon {
-        width: 64px;
-        height: 64px;
+        padding: 30px;
         border-radius: 12px;
+        background: #F8FAFC;
+        transition: transform 0.3s, box-shadow 0.3s;
+        border: 1px solid transparent;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        border-color: #E2E8F0;
+        background: var(--white);
+    }
+
+    .icon-box {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 2rem;
-        margin-bottom: 1rem;
-    }
-    
-    .icon-blue { background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-light)); }
-    .icon-green { background: linear-gradient(135deg, #059669, #10b981); }
-    .icon-purple { background: linear-gradient(135deg, #7c3aed, #8b5cf6); }
-    .icon-orange { background: linear-gradient(135deg, #d97706, #f59e0b); }
-    .icon-red { background: linear-gradient(135deg, #dc2626, #ef4444); }
-    .icon-teal { background: linear-gradient(135deg, #0d9488, #14b8a6); }
-    
-    .feature-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 0.5rem;
-    }
-    
-    .feature-desc {
-        font-size: 0.95rem;
-        color: #64748b;
-        line-height: 1.6;
-    }
-    
-    /* Upload Card */
-    .upload-card {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        max-width: 600px;
-        margin: 0 auto 3rem;
-        overflow: hidden;
-    }
-    
-    .upload-tabs {
-        display: flex;
-        border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .upload-tab {
-        flex: 1;
-        padding: 1rem;
-        text-align: center;
-        font-weight: 500;
-        color: #64748b;
-        cursor: pointer;
-        border: none;
-        background: transparent;
-        transition: all 0.3s ease;
-    }
-    
-    .upload-tab.active {
-        color: var(--primary-blue);
-        border-bottom: 2px solid var(--primary-blue);
-        background: #f0f9ff;
-    }
-    
-    .upload-area {
-        padding: 2rem;
-        text-align: center;
-    }
-    
-    .upload-icon {
-        width: 64px;
-        height: 64px;
-        background: #dbeafe;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1rem;
+        margin-bottom: 20px;
         font-size: 1.5rem;
     }
+
+    /* Feature Colors */
+    .bg-blue { background: #DBEAFE; color: #2563EB; }
+    .bg-green { background: #D1FAE5; color: #059669; }
+    .bg-purple { background: #EDE9FE; color: #7C3AED; }
+    .bg-orange { background: #FFEDD5; color: #EA580C; }
+    .bg-red { background: #FEE2E2; color: #DC2626; }
+    .bg-teal { background: #CCFBF1; color: #0D9488; }
     
-    .upload-text {
-        font-weight: 600;
-        color: #1e293b;
-        margin-bottom: 0.5rem;
-    }
-    
-    .upload-hint {
-        color: #64748b;
-        font-size: 0.875rem;
-        margin-bottom: 1rem;
-    }
-    
-    .browse-btn {
-        background: white;
-        border: 1px solid #d1d5db;
-        color: #374151;
-        padding: 0.5rem 1.5rem;
-        border-radius: 8px;
-        font-weight: 500;
-        cursor: pointer;
-    }
-    
-    .browse-btn:hover {
-        background: #f9fafb;
-    }
-    
-    .process-btn {
-        display: block;
-        width: calc(100% - 2rem);
-        margin: 0 1rem 1rem;
-        background: var(--primary-blue);
-        color: white;
-        border: none;
-        padding: 1rem;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    
-    .process-btn:hover {
-        background: var(--primary-blue-dark);
-    }
-    
-    /* CTA Section - Full Width Blue */
+    .feature-h3 { font-size: 1.25rem; margin-bottom: 10px; font-weight: 600; color: #1F2937; }
+    .feature-p { color: var(--text-light); font-size: 0.95rem; }
+
+    /* --- CTA Section --- */
     .cta-section {
-        background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
-        padding: 4rem 2rem;
+        padding: 80px 0;
+        background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
+        color: var(--white);
         text-align: center;
-        color: white;
-        margin: 3rem -2rem;
-        width: calc(100% + 4rem);
     }
-    
-    .cta-title {
-        font-size: 2.5rem;
+
+    .btn-white {
+        display: inline-block;
+        background: var(--white);
+        color: var(--primary-color) !important;
+        padding: 15px 40px;
+        border-radius: 8px;
         font-weight: 700;
-        margin-bottom: 1rem;
-        font-style: italic;
-    }
-    
-    .cta-subtitle {
-        font-size: 1rem;
-        opacity: 0.9;
-        margin-bottom: 2rem;
-    }
-    
-    .cta-btn {
-        background: transparent;
-        border: 2px solid white;
-        color: white;
-        padding: 0.875rem 2rem;
-        border-radius: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    
-    .cta-btn:hover {
-        background: white;
-        color: var(--primary-blue);
-    }
-    
-    /* Feature Section Background */
-    .features-wrapper {
-        background: #f8fafc;
-        padding: 4rem 2rem;
-        margin: 2rem -2rem;
-        width: calc(100% + 4rem);
-    }
-    
-    .features-title {
-        text-align: center;
-        font-size: 2rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 0.5rem;
-    }
-    
-    .features-subtitle {
-        text-align: center;
-        color: #64748b;
-        margin-bottom: 3rem;
-    }
-    
-    /* Custom Footer - FULL WIDTH */
-    .custom-footer {
-        background: var(--gray-900);
-        color: white;
-        padding: 3rem 2rem 1.5rem;
-        margin-top: 4rem;
-        margin-left: -2rem;
-        margin-right: -2rem;
-        margin-bottom: -10rem;
-        width: calc(100% + 4rem);
-    }
-    
-    .footer-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 2rem;
-    }
-    
-    .footer-content {
-        display: grid;
-        grid-template-columns: 1.5fr 1fr;
-        gap: 3rem;
-        margin-bottom: 2rem;
-    }
-    
-    .footer-brand {
-        max-width: 300px;
-    }
-    
-    .footer-logo {
-        height: 48px;
-        width: 48px;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-    }
-    
-    .footer-desc {
-        color: var(--gray-300);
-        line-height: 1.6;
-        font-size: 0.9375rem;
-    }
-    
-    .footer-links {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 2rem;
-    }
-    
-    .footer-column h4 {
-        font-size: 0.875rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        margin-bottom: 1rem;
-        color: white;
-    }
-    
-    .footer-column a {
-        display: block;
-        color: var(--gray-300);
         text-decoration: none;
-        margin-bottom: 0.5rem;
-        font-size: 0.9375rem;
-        transition: color 0.3s ease;
+        margin-top: 20px;
+        transition: transform 0.2s;
+    }
+    .btn-white:hover { transform: scale(1.05); }
+
+    /* --- Footer --- */
+    .custom-footer {
+        background-color: #111827;
+        color: #D1D5DB;
+        padding: 60px 0 20px;
+        margin-top: -100px; /* Adjust for Streamlit spacing if needed */
+    }
+
+    .footer-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 40px;
+        margin-bottom: 40px;
     }
     
-    .footer-column a:hover {
-        color: var(--primary-blue-light);
-    }
+    .footer-col h4 { color: white; margin-bottom: 20px; font-weight: 600; }
+    .footer-col a { color: #9CA3AF; text-decoration: none; display: block; margin-bottom: 10px; }
+    .footer-col a:hover { color: white; }
     
-    .footer-bottom {
-        text-align: center;
-        padding-top: 1.5rem;
-        border-top: 1px solid var(--gray-700);
-        color: var(--gray-500);
-        font-size: 0.875rem;
-    }
-    
-    /* Hide default Streamlit elements */
-    .stDeployButton {display: none;}
-    
-    /* Success/Info boxes */
-    .element-container .stSuccess {
-        background: #dcfce7;
-        border-left: 4px solid #22c55e;
-        border-radius: 12px;
-        padding: 1rem;
-        color: #166534;
-    }
-    
-    .element-container .stInfo {
-        background: #dbeafe;
-        border-left: 4px solid var(--primary-blue);
-        border-radius: 12px;
-        padding: 1rem;
-        color: #1e40af;
-    }
-    
-    /* Expander */
-    .streamlit-expanderHeader {
-        background: white;
-        border-radius: 12px;
-        font-weight: 600;
-        color: #1e293b;
-    }
-    
-    /* Responsive */
     @media (max-width: 768px) {
-        .hero-title {
-            font-size: 2.5rem;
-        }
-        
-        .footer-content {
-            grid-template-columns: 1fr;
-        }
-        
-        .footer-links {
-            grid-template-columns: 1fr;
-        }
-        
-        .header-buttons {
-            gap: 0.5rem;
-        }
-        
-        .btn-login, .btn-register {
-            padding: 0.625rem 1rem;
-            font-size: 0.875rem;
-        }
+        .footer-grid { grid-template-columns: 1fr; text-align: center; }
+        .hero-title { font-size: 2rem; }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ============================================================================
-# CUSTOM HEADER (Like HTML)
+# HELPER FUNCTIONS
 # ============================================================================
-import base64
-import os
-
-# Encode logo image (with fallback for cloud deployment)
-logo_base64 = ""
-logo_path = Path(__file__).parent / "logo.jpg"
-if logo_path.exists():
-    try:
-        with open(logo_path, "rb") as img_file:
-            logo_base64 = base64.b64encode(img_file.read()).decode()
-    except:
-        pass
-
-st.markdown(f"""
-<div class="custom-header">
-    <div class="header-container">
-        <div class="logo-section">
-            <img src="data:image/jpeg;base64,{logo_base64}" alt="EasyWord Logo" class="logo-img">
-            <div class="logo-text">EasyWord</div>
-        </div>
-        <div class="header-buttons">
-            <button class="btn-login">Đăng nhập</button>
-            <button class="btn-register">Đăng ký</button>
-        </div>
-    </div>
-</div>
-<div class="main-content"></div>
-""", unsafe_allow_html=True)
-
 def collect_options():
     return {
         "clean_whitespace": st.session_state.get("opt_clean", True),
@@ -609,7 +321,6 @@ def collect_options():
         "format_tables": st.session_state.get("opt_tables", True),
         "insert_toc": st.session_state.get("opt_toc", True),
         "add_page_numbers": st.session_state.get("opt_page_numbers", True),
-        "page_number_style": st.session_state.get("opt_page_style", "arabic"),
         "line_spacing": st.session_state.get("line_spacing", 1.3),
         "auto_numbered_heading": True,
     }
@@ -618,8 +329,7 @@ def convert_docx_to_pdf_cloud(docx_path, output_pdf_path):
     try:
         import requests
         api_secret = CONVERTAPI_SECRET
-        if not api_secret:
-            return None
+        if not api_secret: return None
         url = f"https://v2.convertapi.com/convert/docx/to/pdf?Secret={api_secret}&download=attachment"
         with open(docx_path, 'rb') as f:
             files = {'File': ('document.docx', f, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')}
@@ -633,131 +343,33 @@ def convert_docx_to_pdf_cloud(docx_path, output_pdf_path):
     return None
 
 def display_pdf_with_pdfjs(pdf_path):
-    """Hiển thị PDF bằng PDF.js - không bị browser chặn"""
     import base64
     with open(pdf_path, "rb") as pdf_file:
         base64_pdf = base64.b64encode(pdf_file.read()).decode('utf-8')
     
-    # PDF.js viewer HTML
     pdfjs_html = f'''
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-        <style>
-            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-            body {{ background: #525659; font-family: Arial, sans-serif; }}
-            .toolbar {{
-                background: #323639;
-                padding: 8px 16px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                position: sticky;
-                top: 0;
-                z-index: 100;
-            }}
-            .toolbar button {{
-                background: #4a4d50;
-                border: none;
-                color: white;
-                padding: 6px 12px;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 14px;
-            }}
-            .toolbar button:hover {{ background: #5a5d60; }}
-            .toolbar span {{ color: white; font-size: 14px; }}
-            #pdf-container {{
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding: 20px;
-                gap: 20px;
-            }}
-            .page-wrapper {{
-                background: white;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                position: relative;
-            }}
-            .page-number {{
-                position: absolute;
-                bottom: -25px;
-                left: 50%;
-                transform: translateX(-50%);
-                color: #ccc;
-                font-size: 12px;
-            }}
-            canvas {{ display: block; }}
-        </style>
-    </head>
-    <body>
-        <div class="toolbar">
-            <button onclick="zoomOut()">➖</button>
-            <span id="zoom-level">100%</span>
-            <button onclick="zoomIn()">➕</button>
-            <span style="margin-left: 20px;">Tổng: <span id="page-count">0</span> trang</span>
-        </div>
-        <div id="pdf-container"></div>
-        
-        <script>
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-            
-            let pdfDoc = null;
-            let scale = 1.0;
-            const pdfData = atob("{base64_pdf}");
-            
-            async function renderPDF() {{
-                const loadingTask = pdfjsLib.getDocument({{data: pdfData}});
-                pdfDoc = await loadingTask.promise;
-                document.getElementById('page-count').textContent = pdfDoc.numPages;
-                renderAllPages();
-            }}
-            
-            async function renderAllPages() {{
-                const container = document.getElementById('pdf-container');
-                container.innerHTML = '';
-                
-                for (let i = 1; i <= pdfDoc.numPages; i++) {{
-                    const page = await pdfDoc.getPage(i);
-                    const viewport = page.getViewport({{ scale: scale }});
-                    
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'page-wrapper';
-                    
+    <!DOCTYPE html><html><head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>body{{margin:0;background:#525659;}} canvas{{display:block;margin:20px auto;box-shadow:0 4px 12px rgba(0,0,0,0.3);}}</style>
+    </head><body><div id="pdf-container"></div>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const pdfData = atob("{base64_pdf}");
+        pdfjsLib.getDocument({{data: pdfData}}).promise.then(pdf => {{
+            for (let i = 1; i <= pdf.numPages; i++) {{
+                pdf.getPage(i).then(page => {{
+                    const scale = 1.0;
+                    const viewport = page.getViewport({{scale}});
                     const canvas = document.createElement('canvas');
-                    canvas.width = viewport.width;
+                    const context = canvas.getContext('2d');
                     canvas.height = viewport.height;
-                    
-                    const pageNum = document.createElement('div');
-                    pageNum.className = 'page-number';
-                    pageNum.textContent = 'Trang ' + i;
-                    
-                    wrapper.appendChild(canvas);
-                    wrapper.appendChild(pageNum);
-                    container.appendChild(wrapper);
-                    
-                    const ctx = canvas.getContext('2d');
-                    await page.render({{ canvasContext: ctx, viewport: viewport }}).promise;
-                }}
+                    canvas.width = viewport.width;
+                    document.getElementById('pdf-container').appendChild(canvas);
+                    page.render({{canvasContext: context, viewport: viewport}});
+                }});
             }}
-            
-            function zoomIn() {{
-                scale = Math.min(scale + 0.25, 3.0);
-                document.getElementById('zoom-level').textContent = Math.round(scale * 100) + '%';
-                renderAllPages();
-            }}
-            
-            function zoomOut() {{
-                scale = Math.max(scale - 0.25, 0.5);
-                document.getElementById('zoom-level').textContent = Math.round(scale * 100) + '%';
-                renderAllPages();
-            }}
-            
-            renderPDF();
-        </script>
-    </body>
-    </html>
+        }});
+    </script></body></html>
     '''
     st.components.v1.html(pdfjs_html, height=800, scrolling=True)
 
@@ -766,21 +378,15 @@ def display_preview(doc: Document):
     temp_pdf = TEMP_DIR / f"preview_{uuid.uuid4()}.pdf"
     try:
         doc.save(str(temp_docx))
-        
-        # Thử convert sang PDF để xem chính xác số trang
         if CONVERTAPI_SECRET:
             with st.spinner("🔄 Đang tạo PDF Preview..."):
                 result_pdf = convert_docx_to_pdf_cloud(temp_docx, temp_pdf)
                 if result_pdf and Path(result_pdf).exists():
-                    st.success("✅ PDF Preview sẵn sàng!")
                     display_pdf_with_pdfjs(temp_pdf)
                     return
-        
-        # Fallback to HTML nếu không có API key hoặc convert thất bại
         st.info("📄 Hiển thị HTML Preview")
         html_content = docx_to_html(doc)
         st.components.v1.html(html_content, height=800, scrolling=True)
-        
     except Exception as e:
         st.error(f"Lỗi Preview: {e}")
     finally:
@@ -790,239 +396,212 @@ def display_preview(doc: Document):
         except: pass
 
 # ============================================================================
-# MAIN CONTENT
+# APP LAYOUT
 # ============================================================================
 
-# Hero Section (Clean, centered)
+# 1. HEADER
 st.markdown("""
-<div style="text-align: center; padding: 2rem 0 1rem;">
-    <h1 style="font-size: 3rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; line-height: 1.2;">
-        Tạo Tài Liệu Word Chuyên Nghiệp<br>Trong Tích Tắc
-    </h1>
-    <p style="font-size: 1.125rem; color: #64748b; max-width: 600px; margin: 0 auto;">
-        Upload file định dạng thô của bạn và để EasyWord xử lý mọi thứ với công nghệ AI tiên tiến. Tiết kiệm 90% thời gian định dạng.
-    </p>
-</div>
-""", unsafe_allow_html=True)
-
-# UPLOAD & PROCESSING SECTION
-# ============================================================================
-
-# Upload tabs (visual only - functionality via Streamlit)
-st.markdown("""
-<div class="upload-card" style="max-width: 600px; margin: 0 auto 1rem;">
-    <div class="upload-tabs">
-        <div class="upload-tab active">📤 Upload File</div>
-        <div class="upload-tab">⚡ Test Nhanh</div>
+<header class="custom-header">
+    <div class="container nav-wrapper">
+        <a href="#" class="logo">
+            <i class="fa-solid fa-file-word"></i> EasyWord
+        </a>
+        <div class="auth-buttons">
+            <a href="#" class="btn-login">Đăng nhập</a>
+            <a href="#" class="btn-signup">Đăng ký ngay</a>
+        </div>
     </div>
-</div>
+</header>
 """, unsafe_allow_html=True)
 
-# Centered upload
-col_upload = st.columns([1, 4, 1])[1]
-with col_upload:
-    uploaded_file = st.file_uploader("Kéo thả hoặc chọn file Word (.docx)", type=["docx"], label_visibility="collapsed")
-    if uploaded_file:
-        st.success(f"✅ Đã chọn: **{uploaded_file.name}**")
+# 2. HERO
+st.markdown("""
+<section class="hero">
+    <div class="container">
+        <h1 class="hero-title">Tạo Tài Liệu Word Chuyên Nghiệp<br>Trong Tích Tắc</h1>
+        <p class="hero-desc">Upload file định dạng thô của bạn và để EasyWord xử lý mọi thứ với công nghệ AI tiên tiến. Tiết kiệm 90% thời gian định dạng.</p>
+    </div>
+</section>
+""", unsafe_allow_html=True)
 
-# Options Section (Collapsible)
-with st.expander("⚙️ Tùy chỉnh định dạng", expanded=False):
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.checkbox("🧹 Xóa dòng trống thừa", value=True, key="opt_clean")
-        st.checkbox("🔤 Chuẩn hóa font chữ", value=True, key="opt_font")
-        st.checkbox("📏 Thiết lập lề chuẩn", value=True, key="opt_margins")
-    with col2:
-        st.checkbox("↔️ Thụt đầu dòng & giãn dòng", value=True, key="opt_spacing")
-        st.checkbox("🎯 Nhận diện tiêu đề", value=True, key="opt_heading")
-        st.checkbox("📊 Format bảng biểu", value=True, key="opt_tables")
-    with col3:
-        st.checkbox("📑 Tạo mục lục", value=True, key="opt_toc")
-        st.checkbox("🔢 Đánh số trang", value=True, key="opt_page_numbers")
-        st.number_input("Giãn dòng", value=1.3, step=0.1, key="line_spacing")
+# 3. TOOL BOX (Interactive)
+st.markdown('<div class="container"><div class="tool-box-wrapper">', unsafe_allow_html=True)
 
-# Process Button
-col_btn = st.columns([1, 2, 1])[1]
-with col_btn:
-    process_clicked = st.button("✨ Bắt đầu xử lý ngay", type="primary", use_container_width=True)
+# Tabs
+tab1, tab2 = st.tabs(["☁️ Upload File", "⚡ Test Nhanh"])
 
-# Handle file processing
-if process_clicked and uploaded_file:
-    with st.spinner("Đang xử lý tài liệu..."):
-        try:
-            file_bytes = uploaded_file.read()
-            options = collect_options()
-            stream, filename = format_uploaded_stream(file_bytes, uploaded_file.name, options)
-            st.session_state["formatted_stream"] = stream
-            st.session_state["formatted_filename"] = filename
-            stream.seek(0)
-            st.session_state["formatted_doc"] = Document(stream)
-            st.success("✅ Chuẩn hóa thành công!")
-            st.toast("Xử lý hoàn tất!", icon="🎉")
-        except Exception as e:
-            st.error(f"❌ Lỗi: {e}")
-
-# Quick Test Section
-with st.expander("⚡ Test Nhanh với file mẫu", expanded=False):
-    col_test1, col_test2 = st.columns([3, 1])
-    with col_test1:
-        st.info("📁 Click nút bên cạnh để test nhanh với file `test.docx`")
-    with col_test2:
-        if st.button("🚀 TEST NGAY!", use_container_width=True):
-            test_path = Path("test.docx")
-            if test_path.exists():
-                with st.spinner(f"Đang xử lý {test_path.name}..."):
-                    try:
-                        with open(test_path, "rb") as f:
-                            file_bytes = f.read()
-                        options = collect_options()
-                        stream, filename = format_uploaded_stream(file_bytes, test_path.name, options)
-                        st.session_state["formatted_stream"] = stream
-                        st.session_state["formatted_filename"] = filename
-                        stream.seek(0)
-                        st.session_state["formatted_doc"] = Document(stream)
-                        st.success("✅ Test file đã được xử lý thành công!")
-                    except Exception as e:
-                        st.error(f"❌ Lỗi: {e}")
-            else:
-                st.warning("⚠️ File test.docx không tồn tại.")
-
-# ==================== RESULTS SECTION ====================
-if "formatted_stream" in st.session_state:
-    st.markdown("---")
-    st.markdown("### 📥 Kết quả")
+with tab1:
+    st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
+    uploaded_file = st.file_uploader("Upload Word File", type=["docx"], label_visibility="collapsed")
     
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.info(f"**File:** {st.session_state['formatted_filename']}")
-    with col2:
-        st.session_state["formatted_stream"].seek(0)
+    if uploaded_file:
+        st.success(f"✅ Selected: {uploaded_file.name}")
+        
+    # Options inside expander to keep clean
+    with st.expander("⚙️ Tùy chỉnh nâng cao"):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.checkbox("Xóa dòng trống", value=True, key="opt_clean")
+            st.checkbox("Chuẩn hóa font", value=True, key="opt_font")
+            st.checkbox("Chỉnh lề", value=True, key="opt_margins")
+        with col2:
+            st.checkbox("Tạo mục lục", value=True, key="opt_toc")
+            st.checkbox("Đánh số trang", value=True, key="opt_page_numbers")
+            st.number_input("Giãn dòng", 1.0, 2.0, 1.3, 0.1, key="line_spacing")
+
+    if st.button("✨ Bắt đầu xử lý ngay", type="primary", key="btn_process_upload"):
+        if uploaded_file:
+            with st.spinner("Đang xử lý..."):
+                try:
+                    bytes_data = uploaded_file.read()
+                    opts = collect_options()
+                    stream, name = format_uploaded_stream(bytes_data, uploaded_file.name, opts)
+                    st.session_state["result_stream"] = stream
+                    st.session_state["result_name"] = name
+                    stream.seek(0)
+                    st.session_state["result_doc"] = Document(stream)
+                    st.success("Xử lý thành công!")
+                except Exception as e:
+                    st.error(f"Lỗi: {e}")
+        else:
+            st.warning("Vui lòng upload file trước!")
+
+with tab2:
+    st.info("Sử dụng file mẫu để kiểm tra nhanh tính năng")
+    if st.button("🚀 Chạy Test Ngay", key="btn_test_quick"):
+        test_path = Path("test.docx")
+        if test_path.exists():
+             with st.spinner("Đang xử lý test..."):
+                try:
+                    with open(test_path, "rb") as f:
+                        bytes_data = f.read()
+                    opts = collect_options()
+                    stream, name = format_uploaded_stream(bytes_data, "test_result.docx", opts)
+                    st.session_state["result_stream"] = stream
+                    st.session_state["result_name"] = name
+                    stream.seek(0)
+                    st.session_state["result_doc"] = Document(stream)
+                    st.success("Test thành công!")
+                except Exception as e:
+                    st.error(f"Lỗi: {e}")
+        else:
+            st.error("Không tìm thấy file test.docx")
+
+st.markdown('</div></div>', unsafe_allow_html=True) # End tool-box-wrapper
+
+# 4. RESULTS (If any)
+if "result_stream" in st.session_state:
+    st.markdown('<div class="container" style="margin-top: 2rem;">', unsafe_allow_html=True)
+    st.markdown("### 📥 Kết quả")
+    col_d1, col_d2 = st.columns([3, 1])
+    with col_d1:
+        st.info(f"File sẵn sàng: **{st.session_state['result_name']}**")
+    with col_d2:
+        st.session_state["result_stream"].seek(0)
         st.download_button(
-            "⬇️ Tải File Về",
-            st.session_state["formatted_stream"],
-            file_name=st.session_state["formatted_filename"],
+            "⬇️ Tải xuống",
+            st.session_state["result_stream"],
+            file_name=st.session_state["result_name"],
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             use_container_width=True
         )
     
-    st.markdown("---")
-    st.markdown("### 👁️ Xem Trước")
-    with st.expander("📄 Mở Preview", expanded=True):
-        if "formatted_doc" in st.session_state:
-            display_preview(st.session_state["formatted_doc"])
+    with st.expander("👁️ Xem trước tài liệu", expanded=True):
+        if "result_doc" in st.session_state:
+            display_preview(st.session_state["result_doc"])
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# ============================================================================
-# FEATURES SECTION
-# ============================================================================
+
+# 5. FEATURES SECTION
 st.markdown("""
-<div class="features-wrapper">
-    <h2 class="features-title">EasyWord Làm Được Gì?</h2>
-    <p class="features-subtitle">Khám phá các tính năng mạnh mẽ giúp công việc của bạn hiệu quả hơn</p>
-</div>
-""", unsafe_allow_html=True)
+<section class="features">
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 60px;">
+            <h2 style="font-size: 2.25rem; margin-bottom: 10px; font-weight: 700; color: #1F2937;">EasyWord Làm Được Gì?</h2>
+            <p style="color: #6B7280;">Khám phá các tính năng mạnh mẽ giúp công việc của bạn hiệu quả hơn</p>
+        </div>
 
-# Row 1 - 3 features
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.markdown("""
-    <div class="feature-card">
-        <div class="feature-icon icon-blue">📝</div>
-        <div class="feature-title">Tự Động Định Dạng</div>
-        <p class="feature-desc">AI tự động nhận diện và áp dụng định dạng chuẩn (Heading, Paragraph, List) cho tài liệu của bạn ngay lập tức.</p>
-    </div>
-    """, unsafe_allow_html=True)
-with col2:
-    st.markdown("""
-    <div class="feature-card">
-        <div class="feature-icon icon-green">✅</div>
-        <div class="feature-title">Kiểm Tra Chính Tả</div>
-        <p class="feature-desc">Phát hiện và sửa lỗi chính tả, ngữ pháp tự động với độ chính xác cao dành cho Tiếng Việt.</p>
-    </div>
-    """, unsafe_allow_html=True)
-with col3:
-    st.markdown("""
-    <div class="feature-card">
-        <div class="feature-icon icon-purple">📚</div>
-        <div class="feature-title">Template Đa Dạng</div>
-        <p class="feature-desc">Hàng trăm mẫu tài liệu chuyên nghiệp sẵn có cho mọi mục đích: Báo cáo, CV, Đơn từ, Hợp đồng.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.markdown("")
-
-# Row 2 - 3 features
-col4, col5, col6 = st.columns(3)
-with col4:
-    st.markdown("""
-    <div class="feature-card">
-        <div class="feature-icon icon-orange">⚙️</div>
-        <div class="feature-title">Tùy Chỉnh Linh Hoạt</div>
-        <p class="feature-desc">Điều chỉnh mọi chi tiết theo ý muốn: font chữ, màu sắc, căn lề chỉ với vài click chuột.</p>
-    </div>
-    """, unsafe_allow_html=True)
-with col5:
-    st.markdown("""
-    <div class="feature-card">
-        <div class="feature-icon icon-red">⚡</div>
-        <div class="feature-title">Xử Lý Siêu Nhanh</div>
-        <p class="feature-desc">Xử lý tài liệu trong vài giây dù file lớn hay phức tạp. Không cần chờ đợi.</p>
-    </div>
-    """, unsafe_allow_html=True)
-with col6:
-    st.markdown("""
-    <div class="feature-card">
-        <div class="feature-icon icon-teal">🔒</div>
-        <div class="feature-title">Bảo Mật Tuyệt Đối</div>
-        <p class="feature-desc">Mọi tài liệu được mã hóa end-to-end, đảm bảo an toàn riêng tư. File tự hủy sau 24h.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# ============================================================================
-# CTA SECTION
-# ============================================================================
-st.markdown("""
-<div class="cta-section">
-    <h2 class="cta-title">Sẵn Sàng Bắt Đầu?</h2>
-    <p class="cta-subtitle">Tham gia hàng nghìn người dùng đang tin dùng EasyWord mỗi ngày để tối ưu hóa công việc.</p>
-    <button class="cta-btn">Đăng Ký Miễn Phí Ngay</button>
-</div>
-""", unsafe_allow_html=True)
-
-# ============================================================================
-# CUSTOM FOOTER
-# ============================================================================
-st.markdown(f"""
-<div class="custom-footer">
-    <div class="footer-container">
-        <div class="footer-content">
-            <div class="footer-brand">
-                <img src="data:image/jpeg;base64,{logo_base64}" alt="EasyWord" class="footer-logo">
-                <p class="footer-desc">Giải pháp tạo tài liệu Word thông minh và chuyên nghiệp</p>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="icon-box bg-blue"><i class="fa-solid fa-file-lines"></i></div>
+                <div class="feature-h3">Tự Động Định Dạng</div>
+                <div class="feature-p">AI tự động nhận diện và áp dụng định dạng chuẩn (Heading, Paragraph, List) cho tài liệu ngay lập tức.</div>
             </div>
-            <div class="footer-links">
-                <div class="footer-column">
-                    <h4>Sản phẩm</h4>
-                    <a href="#">Tính năng</a>
-                    <a href="#">Bảng giá</a>
-                    <a href="#">Templates</a>
-                </div>
-                <div class="footer-column">
-                    <h4>Hỗ trợ</h4>
-                    <a href="#">Trung tâm trợ giúp</a>
-                    <a href="#">Liên hệ</a>
-                    <a href="#">FAQ</a>
-                </div>
-                <div class="footer-column">
-                    <h4>Pháp lý</h4>
-                    <a href="#">Điều khoản</a>
-                    <a href="#">Bảo mật</a>
-                    <a href="#">Cookie</a>
-                </div>
+            <div class="feature-card">
+                <div class="icon-box bg-green"><i class="fa-solid fa-check-double"></i></div>
+                <div class="feature-h3">Kiểm Tra Chính Tả</div>
+                <div class="feature-p">Phát hiện và sửa lỗi chính tả, ngữ pháp tự động với độ chính xác cao dành cho Tiếng Việt.</div>
+            </div>
+            <div class="feature-card">
+                <div class="icon-box bg-purple"><i class="fa-solid fa-palette"></i></div>
+                <div class="feature-h3">Template Đa Dạng</div>
+                <div class="feature-p">Hàng trăm mẫu tài liệu chuyên nghiệp sẵn có cho mọi mục đích: Báo cáo, CV, Đơn từ, Hợp đồng.</div>
+            </div>
+            <div class="feature-card">
+                <div class="icon-box bg-orange"><i class="fa-solid fa-sliders"></i></div>
+                <div class="feature-h3">Tùy Chỉnh Linh Hoạt</div>
+                <div class="feature-p">Điều chỉnh mọi chi tiết theo ý muốn: font chữ, màu sắc, căn lề chỉ với vài cú click chuột.</div>
+            </div>
+            <div class="feature-card">
+                <div class="icon-box bg-red"><i class="fa-solid fa-bolt"></i></div>
+                <div class="feature-h3">Xử Lý Siêu Nhanh</div>
+                <div class="feature-p">Xử lý tài liệu trong vài giây dù file lớn hay phức tạp. Không còn chờ đợi.</div>
+            </div>
+            <div class="feature-card">
+                <div class="icon-box bg-teal"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="feature-h3">Bảo Mật Tuyệt Đối</div>
+                <div class="feature-p">Mọi tài liệu được mã hóa end-to-end, đảm bảo an toàn riêng tư. File tự hủy sau 24h.</div>
             </div>
         </div>
-        <div class="footer-bottom">
-            <p>&copy; 2026 EasyWord. All rights reserved.</p>
+    </div>
+</section>
+""", unsafe_allow_html=True)
+
+# 6. CTA SECTION
+st.markdown("""
+<section class="cta-section">
+    <div class="container">
+        <h2 style="font-size: 2.5rem; margin-bottom: 20px; font-weight: 700;">Sẵn Sàng Bắt Đầu?</h2>
+        <p style="font-size: 1.1rem; opacity: 0.9;">Tham gia hàng nghìn người dùng đang tin dùng EasyWord mỗi ngày để tối ưu hóa công việc.</p>
+        <a href="#" class="btn-white">Đăng Ký Miễn Phí Ngay</a>
+    </div>
+</section>
+""", unsafe_allow_html=True)
+
+# 7. FOOTER
+st.markdown("""
+<footer class="custom-footer">
+    <div class="container">
+        <div class="footer-grid">
+            <div class="footer-col">
+                <a href="#" class="logo" style="color: #fff; margin-bottom: 20px; display: inline-block;">
+                    <i class="fa-solid fa-file-word"></i> EasyWord
+                </a>
+                <p style="font-size: 0.9rem; color: #9CA3AF;">Giải pháp tạo tài liệu Word thông minh và chuyên nghiệp hàng đầu Việt Nam.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Sản phẩm</h4>
+                <a href="#">Tính năng</a>
+                <a href="#">Bảng giá</a>
+                <a href="#">Templates</a>
+                <a href="#">API</a>
+            </div>
+            <div class="footer-col">
+                <h4>Hỗ trợ</h4>
+                <a href="#">Trung tâm trợ giúp</a>
+                <a href="#">Liên hệ</a>
+                <a href="#">Cộng đồng</a>
+            </div>
+            <div class="footer-col">
+                <h4>Pháp lý</h4>
+                <a href="#">Điều khoản</a>
+                <a href="#">Bảo mật</a>
+                <a href="#">Cookie Policy</a>
+            </div>
+        </div>
+        <div style="text-align: center; border-top: 1px solid #374151; padding-top: 20px; font-size: 0.9rem; color: #9CA3AF;">
+            &copy; 2026 EasyWord. All rights reserved.
         </div>
     </div>
-</div>
+</footer>
 """, unsafe_allow_html=True)
