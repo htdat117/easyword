@@ -183,16 +183,20 @@ function downloadFile() {
 }
 
 // ==========================================================================
-// Preview Functionality
+// Preview Functionality - Modal with Zoom
 // ==========================================================================
 
+let currentPDFDocument = null;
+let currentZoomScale = 1.0;
+let currentPDFData = null;
+
 async function showPreview(isTest = false) {
-    const previewContainer = document.getElementById('preview-container');
+    const previewModal = document.getElementById('preview-modal');
     const previewFrame = document.getElementById('preview-frame');
 
-    if (!previewContainer) return;
+    if (!previewModal) return;
 
-    previewContainer.style.display = 'block';
+    previewModal.style.display = 'flex';
     previewFrame.innerHTML = '<div class="preview-loading"><div class="spinner"></div><p>Đang tạo bản xem trước PDF...</p></div>';
 
     try {
@@ -208,7 +212,7 @@ async function showPreview(isTest = false) {
                 body: formData
             });
         } else {
-            previewFrame.innerHTML = '<p style="text-align:center;color:#6B7280;">Vui lòng chọn file để xem trước</p>';
+            previewFrame.innerHTML = '<p style="text-align:center;color:#fff;">Vui lòng chọn file để xem trước</p>';
             return;
         }
 
@@ -219,12 +223,13 @@ async function showPreview(isTest = false) {
         const data = await response.json();
 
         if (data.type === 'pdf') {
-            // Render PDF using PDF.js canvas
-            await renderPDFWithCanvas(data.content, previewFrame);
+            // Store PDF data for zoom operations
+            currentPDFData = data.content;
+            await renderPDFWithZoom(data.content, previewFrame);
+            setupZoomControls();
         } else if (data.type === 'html') {
-            // Render HTML content
             previewFrame.innerHTML = `
-                <div class="html-preview" style="max-height:600px;overflow-y:auto;padding:20px;background:white;border-radius:8px;border:1px solid #E5E7EB;">
+                <div class="html-preview" style="max-height:100%;overflow-y:auto;padding:20px;background:white;border-radius:8px;">
                     ${data.content}
                 </div>
             `;
@@ -250,8 +255,8 @@ async function loadPDFJS() {
     });
 }
 
-// Render PDF to canvas using PDF.js
-async function renderPDFWithCanvas(base64Content, container) {
+// Render PDF with zoom capability
+async function renderPDFWithZoom(base64Content, container, scale = null) {
     try {
         await loadPDFJS();
 
@@ -264,22 +269,34 @@ async function renderPDFWithCanvas(base64Content, container) {
 
         // Load PDF
         const pdf = await pdfjsLib.getDocument({ data: pdfArray }).promise;
+        currentPDFDocument = pdf;
+
+        // If scale is not specified, calculate fit-to-width
+        if (scale === null) {
+            const firstPage = await pdf.getPage(1);
+            const viewport = firstPage.getViewport({ scale: 1 });
+            const containerWidth = container.clientWidth - 40; // padding
+            scale = containerWidth / viewport.width;
+            currentZoomScale = scale;
+        } else {
+            currentZoomScale = scale;
+        }
+
+        // Update zoom level display
+        updateZoomDisplay();
 
         // Create container for all pages
-        container.innerHTML = '<div id="pdf-pages" style="max-height:600px;overflow-y:auto;padding:10px;background:#525659;border-radius:8px;"></div>';
+        container.innerHTML = '<div id="pdf-pages"></div>';
         const pagesContainer = document.getElementById('pdf-pages');
 
         // Render each page
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
             const page = await pdf.getPage(pageNum);
-            const scale = 1.5;
-            const viewport = page.getViewport({ scale });
+            const viewport = page.getViewport({ scale: currentZoomScale });
 
             // Create canvas for this page
             const canvas = document.createElement('canvas');
-            canvas.style.display = 'block';
-            canvas.style.margin = '10px auto';
-            canvas.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+            canvas.className = 'pdf-page-canvas';
             canvas.width = viewport.width;
             canvas.height = viewport.height;
 
@@ -298,11 +315,71 @@ async function renderPDFWithCanvas(base64Content, container) {
     }
 }
 
-function hidePreview() {
-    const previewContainer = document.getElementById('preview-container');
-    if (previewContainer) {
-        previewContainer.style.display = 'none';
+// Setup zoom control event listeners
+function setupZoomControls() {
+    const zoomInBtn = document.getElementById('zoom-in-btn');
+    const zoomOutBtn = document.getElementById('zoom-out-btn');
+    const fitWidthBtn = document.getElementById('fit-width-btn');
+    const closeBtn = document.getElementById('close-modal-btn');
+
+    if (zoomInBtn) {
+        zoomInBtn.onclick = () => zoomIn();
     }
+
+    if (zoomOutBtn) {
+        zoomOutBtn.onclick = () => zoomOut();
+    }
+
+    if (fitWidthBtn) {
+        fitWidthBtn.onclick = () => fitToWidth();
+    }
+
+    if (closeBtn) {
+        closeBtn.onclick = () => hidePreview();
+    }
+}
+
+function zoomIn() {
+    currentZoomScale = Math.min(currentZoomScale * 1.2, 3.0); // Max 300%
+    rerenderPDF();
+}
+
+function zoomOut() {
+    currentZoomScale = Math.max(currentZoomScale / 1.2, 0.3); // Min 30%
+    rerenderPDF();
+}
+
+function fitToWidth() {
+    const previewFrame = document.getElementById('preview-frame');
+    if (currentPDFDocument) {
+        renderPDFWithZoom(currentPDFData, previewFrame, null); // null triggers auto-fit
+    }
+}
+
+function rerenderPDF() {
+    const previewFrame = document.getElementById('preview-frame');
+    if (currentPDFData && previewFrame) {
+        renderPDFWithZoom(currentPDFData, previewFrame, currentZoomScale);
+    }
+}
+
+function updateZoomDisplay() {
+    const zoomLevelSpan = document.getElementById('zoom-level');
+    if (zoomLevelSpan) {
+        zoomLevelSpan.textContent = Math.round(currentZoomScale * 100) + '%';
+    }
+}
+
+function hidePreview() {
+    const previewModal = document.getElementById('preview-modal');
+    if (previewModal) {
+        previewModal.style.display = 'none';
+    }
+
+    // Clean up
+    currentPDFDocument = null;
+    currentPDFData = null;
+    currentZoomScale = 1.0;
 }
 
 // ==========================================================================
