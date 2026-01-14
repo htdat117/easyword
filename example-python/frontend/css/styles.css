@@ -62,6 +62,12 @@ header {
     text-decoration: none;
 }
 
+.logo img {
+    height: 40px;
+    width: auto;
+}
+
+
 .auth-buttons .btn {
     padding: 8px 20px;
     border-radius: 6px;

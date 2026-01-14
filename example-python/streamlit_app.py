@@ -10,7 +10,7 @@ import base64
 # ============================================================================
 st.set_page_config(
     page_title="EasyWord - Tạo Tài Liệu Word Chuyên Nghiệp",
-    page_icon="📄",
+    page_icon="frontend/img/logo.png",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
