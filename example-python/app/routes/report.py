@@ -24,7 +24,7 @@ def generate_report():
             download_name=filename,
         )
     except Exception as exc:
-        logging.error("Lỗi tạo báo cáo: %s", exc)
+        logging.error("Error generating report: %s", exc)
         logging.debug(traceback.format_exc())
         return jsonify({"error": "Không thể tạo báo cáo", "details": str(exc)}), 500
 
@@ -63,7 +63,7 @@ def format_report():
             "file_id": file_id
         })
     except Exception as exc:
-        logging.error("Lỗi chuẩn hóa: %s", exc)
+        logging.error("Error formatting: %s", exc)
         logging.debug(traceback.format_exc())
         return jsonify({"error": "Lỗi xử lý file", "details": str(exc)}), 500
 
@@ -88,7 +88,7 @@ def preview_file(file_id):
             headers={"Content-Disposition": "inline"}
         )
     except Exception as exc:
-        logging.error("Lỗi preview file: %s", exc)
+        logging.error("Error previewing file: %s", exc)
         logging.debug(traceback.format_exc())
         return jsonify({"error": "Không thể xem preview", "details": str(exc)}), 500
 
@@ -111,6 +111,6 @@ def download_file(file_id):
             download_name=original_filename,
         )
     except Exception as exc:
-        logging.error("Lỗi download file: %s", exc)
+        logging.error("Error downloading file: %s", exc)
         return jsonify({"error": "Không thể tải file"}), 500
 

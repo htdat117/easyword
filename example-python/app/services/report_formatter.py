@@ -50,6 +50,12 @@ from app.services.docx_fields import (
 # =========================================================================
 # Compile regex once at module load instead of every function call
 NUMBERED_HEADING_PATTERN = re.compile(r'^(\d+(?:\.\d+)*)\.\s+(.+)$')
+
+# Separate patterns for Table vs Figure captions
+TABLE_CAPTION_PATTERN = re.compile(r'^Bảng[\s\d\.]*[:\.]?\s*(.+)$', re.IGNORECASE)
+FIGURE_CAPTION_PATTERN = re.compile(r'^(Hình|Sơ đồ|Biểu đồ)[\s\d\.]*[:\.]?\s*(.+)$', re.IGNORECASE)
+
+# Combined pattern for general caption detection (backward compatibility)
 CAPTION_PATTERN = re.compile(r'^(Hình|Sơ đồ|Bảng|Biểu đồ)[\s\d\.]*[:\.]?\s+(.+)$', re.IGNORECASE)
 WHITESPACE_PATTERN = re.compile(r"[ \t\u00A0]{2,}")
 
@@ -164,7 +170,7 @@ def _insert_paragraph_after(paragraph, text=""):
             new_para.add_run(text)
         return new_para
     except Exception:
-        logging.warning("Không thể chèn đoạn văn sau vị trí yêu cầu.")
+        logging.warning("Cannot insert paragraph after requested position.")
         return paragraph
 
 def _add_section_break(paragraph):
@@ -208,12 +214,12 @@ def _add_section_break(paragraph):
                             new_margins.set(qn(f"w:{attr}"), val)
                     sect_pr.append(new_margins)
             except Exception as e:
-                logging.debug(f"Không thể copy margins: {e}")
+                logging.debug(f"Cannot copy margins: {e}")
         
         p_pr.append(sect_pr)
-        logging.info("Đã thêm section break thành công")
+        logging.info("Added section break successfully")
     except Exception as e:
-        logging.warning(f"Không thể thêm section break: {e}")
+        logging.warning(f"Cannot add section break: {e}")
 
 # =========================================================================
 # HÀM XỬ LÝ NHẬN DIỆN VÀ ĐÁNH SỐ CAPTION AN TOÀN
@@ -254,21 +260,45 @@ def _force_caption_font(run):
     r_pr.append(sz_cs)
 
 def _process_captions(doc):
+    """
+    Xử lý captions cho Bảng và Hình riêng biệt.
+    - Bảng: đánh số Bảng 1, Bảng 2, ...
+    - Hình/Sơ đồ/Biểu đồ: đánh số Hình 1, Hình 2, ...
+    """
     _ensure_caption_style(doc)
-    figure_count = 0
-    # Use module-level compiled pattern for performance
+    figure_count = 0  # For: Hình, Sơ đồ, Biểu đồ
+    table_count = 0   # For: Bảng
+    
     for paragraph in doc.paragraphs:
         has_image = _paragraph_has_image(paragraph)
         text = paragraph.text.strip()
-        if not text: continue
-        match = CAPTION_PATTERN.match(text)
-        if match:
+        if not text: 
+            continue
+        
+        # Check for Table caption first
+        table_match = TABLE_CAPTION_PATTERN.match(text)
+        figure_match = FIGURE_CAPTION_PATTERN.match(text)
+        
+        new_text = None
+        
+        if table_match:
+            # This is a Table caption
+            table_count += 1
+            content = table_match.group(1).strip()
+            new_text = f"Bảng {table_count}: {content}"
+            paragraph.style = "UEL Figure"  # Reuse same style
+            paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            
+        elif figure_match:
+            # This is a Figure caption (Hình, Sơ đồ, Biểu đồ)
             figure_count += 1
-            prefix = "Hình" 
-            content = match.group(2).strip()
-            new_text = f"{prefix} {figure_count}: {content}"
+            content = figure_match.group(2).strip()
+            new_text = f"Hình {figure_count}: {content}"
             paragraph.style = "UEL Figure"
             paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Apply the new text if we found a caption
+        if new_text:
             if has_image:
                 text_replaced = False
                 for run in paragraph.runs:
@@ -284,22 +314,24 @@ def _process_captions(doc):
                 run = paragraph.add_run(new_text)
                 _force_caption_font(run)
     
-    if figure_count > 0:
-        logging.info(f"Đã xử lý {figure_count} captions với font {STANDARD_FONT} {TOC_FONT_SIZE.pt}pt")
+    if figure_count > 0 or table_count > 0:
+        logging.info(f"Processed {table_count} tables and {figure_count} figures with font {STANDARD_FONT} {TOC_FONT_SIZE.pt}pt")
 
 # =========================================================================
 # HÀM CHÈN TOC (MỤC LỤC) VÀ TOF (DANH MỤC HÌNH) - THỦ CÔNG
 # =========================================================================
-def _collect_headings_and_figures_single_pass(doc):
+def _collect_headings_tables_figures_single_pass(doc):
     """
-    OPTIMIZED: Thu thập headings VÀ figures trong MỘT LẦN duyệt duy nhất
-    Thay vì duyệt 2 lần riêng biệt, gộp thành 1 pass để cải thiện hiệu suất.
+    OPTIMIZED: Thu thập headings, tables, VÀ figures trong MỘT LẦN duyệt duy nhất.
+    Phân biệt Bảng vs Hình để tạo danh mục riêng biệt.
     
-    Returns: (headings_list, figures_list)
+    Returns: (headings_list, tables_list, figures_list)
         headings_list: list of (text, level, page_estimate)
-        figures_list: list of (text, page_estimate)
+        tables_list: list of (text, page_estimate) - Bảng captions
+        figures_list: list of (text, page_estimate) - Hình/Sơ đồ/Biểu đồ captions
     """
     headings = []
+    tables = []
     figures = []
     page_estimate = 1
     lines_per_page = 35
@@ -322,8 +354,19 @@ def _collect_headings_and_figures_single_pass(doc):
             level = min(max(level, 1), 6)
             headings.append((text, level, page_estimate))
         
-        # Check if figure caption (use module-level pattern)
-        if style_name in ["UEL Figure", "Caption"] or CAPTION_PATTERN.match(text):
+        # Check if caption - separate tables from figures
+        if style_name in ["UEL Figure", "Caption"]:
+            # Check if it's a table or figure based on text content
+            if TABLE_CAPTION_PATTERN.match(text):
+                tables.append((text, page_estimate))
+            elif FIGURE_CAPTION_PATTERN.match(text):
+                figures.append((text, page_estimate))
+            else:
+                # Default to figures for unrecognized captions
+                figures.append((text, page_estimate))
+        elif TABLE_CAPTION_PATTERN.match(text):
+            tables.append((text, page_estimate))
+        elif FIGURE_CAPTION_PATTERN.match(text):
             figures.append((text, page_estimate))
         
         # Estimate page number
@@ -332,20 +375,28 @@ def _collect_headings_and_figures_single_pass(doc):
             page_estimate += 1
             line_count = 0
     
-    return headings, figures
+    return headings, tables, figures
 
 
 # Legacy wrapper functions for backward compatibility
+def _collect_headings_and_figures_single_pass(doc):
+    """Legacy wrapper for backward compatibility."""
+    headings, tables, figures = _collect_headings_tables_figures_single_pass(doc)
+    # Combine tables and figures for legacy callers
+    all_captions = tables + figures
+    return headings, all_captions
+
+
 def _collect_headings(doc):
     """Legacy wrapper - calls optimized single-pass function."""
-    headings, _ = _collect_headings_and_figures_single_pass(doc)
+    headings, _, _ = _collect_headings_tables_figures_single_pass(doc)
     return headings
 
 
 def _collect_figures(doc):
     """Legacy wrapper - calls optimized single-pass function."""
-    _, figures = _collect_headings_and_figures_single_pass(doc)
-    return figures
+    _, tables, figures = _collect_headings_tables_figures_single_pass(doc)
+    return tables + figures
 
 
 def _create_toc_entry(doc, text, level, page_num, after_para):
@@ -398,7 +449,7 @@ def _force_run_font_xml(run):
     """
     r_pr = run._element.get_or_add_rPr()
     
-    # Xóa font cũ
+    # Xóa font cũ (giữ lại bold nếu có)
     for tag in ["rFonts", "sz", "szCs"]:
         old = r_pr.find(qn(f"w:{tag}"))
         if old is not None:
@@ -422,10 +473,24 @@ def _force_run_font_xml(run):
     r_pr.append(sz_cs)
 
 
+def _force_bold_xml(run):
+    """Force bold formatting through XML to ensure it takes effect."""
+    r_pr = run._element.get_or_add_rPr()
+    
+    # Remove existing bold element if any
+    old_bold = r_pr.find(qn("w:b"))
+    if old_bold is not None:
+        r_pr.remove(old_bold)
+    
+    # Add bold element
+    bold = OxmlElement("w:b")
+    r_pr.append(bold)
+
+
 def _insert_table_of_contents(doc, options, anchor=None):
     """
-    Chèn Mục lục và Danh mục hình ảnh THỦ CÔNG
-    Không dùng TOC field để đảm bảo font Times New Roman 13pt
+    Chèn Mục lục, Danh mục Bảng biểu, và Danh mục Hình ảnh THỦ CÔNG.
+    Tạo 3 section riêng biệt với font Times New Roman 13pt.
     """
     if not options.get("insert_toc", True):
         return
@@ -433,10 +498,10 @@ def _insert_table_of_contents(doc, options, anchor=None):
     _copy_heading_style_to_toc(doc)
     _ensure_caption_style(doc) 
     
-    # OPTIMIZED: Thu thập headings và figures trong 1 lần duyệt duy nhất
-    headings, figures = _collect_headings_and_figures_single_pass(doc)
+    # OPTIMIZED: Thu thập headings, tables, figures trong 1 lần duyệt duy nhất
+    headings, tables, figures = _collect_headings_tables_figures_single_pass(doc)
     
-    logging.info(f"Tìm thấy {len(headings)} headings và {len(figures)} hình ảnh")
+    logging.info(f"Found {len(headings)} headings, {len(tables)} tables, {len(figures)} figures")
     
     # ==================== TẠO MỤC LỤC ====================
     first_paragraph = doc.paragraphs[0] if doc.paragraphs else None
@@ -454,6 +519,7 @@ def _insert_table_of_contents(doc, options, anchor=None):
         run.font.bold = True
         _ensure_east_asia_font(run)
         _force_run_font_xml(run)
+        _force_bold_xml(run)  # Force bold through XML
     
     # Tạo các entry mục lục thủ công
     current_para = toc_heading
@@ -477,6 +543,40 @@ def _insert_table_of_contents(doc, options, anchor=None):
     toc_page_break.add_run().add_break(WD_BREAK.PAGE)
     current_para = toc_page_break
     
+    # ==================== TẠO DANH MỤC BẢNG BIỂU ====================
+    tot_heading = _insert_paragraph_after(current_para, "DANH MỤC BẢNG BIỂU")
+    tot_heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    tot_heading.paragraph_format.space_before = Pt(0)
+    tot_heading.paragraph_format.space_after = Pt(12)
+    for run in tot_heading.runs:
+        run.font.name = STANDARD_FONT
+        run.font.size = TOC_FONT_SIZE
+        run.font.bold = True
+        _ensure_east_asia_font(run)
+        _force_run_font_xml(run)
+        _force_bold_xml(run)  # Force bold through XML
+    
+    current_para = tot_heading
+    
+    if tables:
+        for text, page_num in tables:
+            current_para = _create_toc_entry(doc, text, 1, page_num, current_para)
+    else:
+        # Nếu không có bảng, thêm placeholder
+        placeholder = _insert_paragraph_after(current_para, "(Chưa có danh mục bảng biểu)")
+        placeholder.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for run in placeholder.runs:
+            run.font.name = STANDARD_FONT
+            run.font.size = TOC_FONT_SIZE
+            run.font.italic = True
+            _ensure_east_asia_font(run)
+        current_para = placeholder
+    
+    # Page break sau danh mục bảng
+    tables_page_break = _insert_paragraph_after(current_para)
+    tables_page_break.add_run().add_break(WD_BREAK.PAGE)
+    current_para = tables_page_break
+    
     # ==================== TẠO DANH MỤC HÌNH ẢNH ====================
     tof_heading = _insert_paragraph_after(current_para, "DANH MỤC HÌNH ẢNH")
     tof_heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -488,6 +588,7 @@ def _insert_table_of_contents(doc, options, anchor=None):
         run.font.bold = True
         _ensure_east_asia_font(run)
         _force_run_font_xml(run)
+        _force_bold_xml(run)  # Force bold through XML
     
     current_para = tof_heading
     
@@ -526,7 +627,7 @@ def _insert_table_of_contents(doc, options, anchor=None):
     # Tạo section break để ngắt việc đánh số trang
     _add_section_break(page_break_para)
     
-    logging.info(f"Đã tạo Mục lục thủ công với {len(headings)} entries, font {STANDARD_FONT} {TOC_FONT_SIZE.pt}pt")
+    logging.info(f"Created TOC with {len(headings)} headings, {len(tables)} tables, {len(figures)} figures")
 
 # =========================================================================
 # [SỬA QUAN TRỌNG] HÀM TẠO FIELD PAGE NUMBER BẰNG COMPLEX FIELD
@@ -539,7 +640,7 @@ def _create_attribute(element, name, value):
 
 def _apply_page_numbers(doc, options):
     if not options.get("add_page_numbers", True):
-        logging.info("add_page_numbers=False, bỏ qua đánh số trang")
+        logging.info("add_page_numbers=False, skipping page numbering")
         return
     
     # Xác định kiểu đánh số
@@ -548,43 +649,43 @@ def _apply_page_numbers(doc, options):
     
     # Kiểm tra xem có Mục lục không để xác định Section bắt đầu đánh số 1
     has_toc = _document_has_toc(doc) or options.get("insert_toc", True)
-    logging.info(f"Số sections trong document: {len(doc.sections)}, has_toc: {has_toc}")
+    logging.info(f"Document sections: {len(doc.sections)}, has_toc: {has_toc}")
     
     # Nếu có TOC VÀ có nhiều hơn 1 section, nội dung chính ở Section 1 (bắt đầu đánh số từ 1)
     # Nếu chỉ có 1 section, bắt đầu đánh số từ section đó
     target_section_idx = 1 if (has_toc and len(doc.sections) > 1) else 0
-    logging.info(f"Target section để bắt đầu đánh số từ 1: {target_section_idx}")
+    logging.info(f"Target section to start numbering from 1: {target_section_idx}")
     
     for idx, section in enumerate(doc.sections):
-        logging.info(f"Đang xử lý section {idx}/{len(doc.sections)-1}")
+        logging.info(f"Processing section {idx}/{len(doc.sections)-1}")
         
         # --- XỬ LÝ FOOTER ---
         # Đảm bảo footer tồn tại - truy cập footer để khởi tạo nếu chưa có
         try:
             footer = section.footer
-            logging.info(f"Section {idx}: Đã truy cập footer, số paragraphs hiện tại: {len(footer.paragraphs)}")
+            logging.info(f"Section {idx}: Accessed footer, paragraphs: {len(footer.paragraphs)}")
         except Exception as e:
-            logging.error(f"Không thể truy cập footer của section {idx}: {e}")
+            logging.error(f"Cannot access footer of section {idx}: {e}")
             continue
         
         # Ngắt kết nối với section trước (quan trọng để restart numbering)
         try:
             section.footer.is_linked_to_previous = False
-            logging.info(f"Section {idx}: Đã ngắt kết nối footer với section trước")
+            logging.info(f"Section {idx}: Unlinked footer from previous section")
         except AttributeError as e:
-            logging.warning(f"Section {idx}: Không thể ngắt kết nối footer: {e}")
+            logging.warning(f"Section {idx}: Cannot unlink footer: {e}")
             pass
         
         # Xóa các đoạn văn cũ trong footer
         old_para_count = len(footer.paragraphs)
         while footer.paragraphs:
             _remove_paragraph(footer.paragraphs[0])
-        logging.info(f"Section {idx}: Đã xóa {old_para_count} paragraphs cũ trong footer")
+        logging.info(f"Section {idx}: Removed {old_para_count} old paragraphs from footer")
         
         # Nếu là trang bìa (idx=0, có mục lục VÀ có nhiều hơn 1 section) thì KHÔNG đánh số
         # Nếu chỉ có 1 section thì vẫn phải đánh số dù có TOC
         if has_toc and idx == 0 and len(doc.sections) > 1:
-            logging.info(f"Section {idx}: Bỏ qua (trang bìa)")
+            logging.info(f"Section {idx}: Skipped (cover page)")
             continue
         
         # Tạo đoạn văn mới chứa số trang
@@ -610,7 +711,7 @@ def _apply_page_numbers(doc, options):
             run.font.size = PAGE_NUMBER_FONT_SIZE
             _ensure_east_asia_font(run)
             
-            logging.info(f"Section {idx}: Đang set font = {STANDARD_FONT}, size = {PAGE_NUMBER_FONT_SIZE.pt}pt")
+            logging.info(f"Section {idx}: Setting font = {STANDARD_FONT}, size = {PAGE_NUMBER_FONT_SIZE.pt}pt")
             
             # Force set font trong XML để đảm bảo field thừa hưởng
             r_pr = run._element.get_or_add_rPr()
@@ -639,12 +740,12 @@ def _apply_page_numbers(doc, options):
             sz_cs.set(qn("w:val"), str(page_size_half_pts))
             r_pr.append(sz_cs)
         except Exception as e:
-            logging.error(f"Lỗi format font cho số trang: {e}")
+            logging.error(f"Error formatting page number font: {e}")
         
         # Chèn Complex Field - đáng tin cậy hơn Simple Field
         _add_page_number_field(run, current_instr)
         
-        logging.info(f"Đã thêm field số trang vào footer section {idx}")
+        logging.info(f"Added page number field to footer section {idx}")
 
         # --- XỬ LÝ SỐ TRANG BẮT ĐẦU (RESTART NUMBERING) ---
         # Chỉ reset về 1 tại section đầu tiên của phần Nội dung
@@ -660,7 +761,7 @@ def _apply_page_numbers(doc, options):
                 pg_num_type.set(qn("w:start"), "1")
                 pg_num_type.set(qn("w:fmt"), "decimal")
             except Exception as e:
-                logging.warning(f"Lỗi đặt start page number: {e}")
+                logging.warning(f"Error setting start page number: {e}")
 
 # =========================================================================
 # CÁC HÀM XỬ LÝ CHÍNH
@@ -753,15 +854,43 @@ def _standardize_paragraph(paragraph, options):
             fmt.line_spacing = options.get("line_spacing", 1.3)
             fmt.space_before = Pt(0)
             fmt.space_after = Pt(6)
-            if clean_text.startswith(("-", "+", "•", "*")):
-                fmt.first_line_indent = Pt(0)
+            
+            # Check if paragraph has Word list/numbering format
+            has_list_format = False
+            try:
+                p_pr = paragraph._p.get_or_add_pPr()
+                # Check for numPr (numbering properties) in paragraph
+                if p_pr.find(qn("w:numPr")) is not None:
+                    has_list_format = True
+            except:
+                pass
+            
+            # Check if text starts with bullet-like characters
+            starts_with_bullet = clean_text.startswith(("-", "+", "•", "*", "–", "—", "›", "»", "○", "●"))
+            
+            # Check if text starts with number followed by dot/paren (e.g., "1.", "a)", "I.")
+            starts_with_number = bool(re.match(r'^[\dIVXivx]+[.)]\s', clean_text) or 
+                                       re.match(r'^[a-zA-Z][.)]\s', clean_text))
+            
+            # Estimate if paragraph is multi-line (rough: >80 chars per line)
+            chars_per_line = 80  # approximate for standard page width
+            is_multi_line = len(clean_text) > chars_per_line
+            
+            # Indentation Logic:
+            # 1. Lists/Bullets: Apply Hanging Indent (Left 0.63cm, First Line -0.63cm)
+            if has_list_format or starts_with_bullet or starts_with_number:
+                fmt.left_indent = Cm(0.63)
+                fmt.first_line_indent = Cm(-0.63)
+            
+            # 2. Short single-line text (not list): No indent
+            elif not is_multi_line:
                 fmt.left_indent = Pt(0)
-            elif 0 < len(clean_text) < 50:
                 fmt.first_line_indent = Pt(0)
-                fmt.left_indent = Pt(0)
+                
+            # 3. Standard Body Paragraphs: First line indent
             else:
-                fmt.first_line_indent = PARAGRAPH_INDENT
                 fmt.left_indent = Pt(0)
+                fmt.first_line_indent = PARAGRAPH_INDENT
 
 def apply_standard_formatting(doc: Document, options=None):
     options = merge_options(options)
@@ -774,7 +903,7 @@ def apply_standard_formatting(doc: Document, options=None):
                 section.left_margin = UEL_MARGINS["left"]
                 section.right_margin = UEL_MARGINS["right"]
         except Exception:
-            logging.warning("Không thể áp dụng lề cho tài liệu.")
+            logging.warning("Cannot apply margins to document.")
             
     _process_captions(doc)
     _copy_heading_style_to_toc(doc)

@@ -38,7 +38,7 @@ def merge_options(raw_options):
         try:
             raw_options = json.loads(raw_options)
         except json.JSONDecodeError:
-            logging.warning("Không parse được options, sử dụng mặc định.")
+            logging.warning("Cannot parse options, using defaults.")
             return options
 
     if not isinstance(raw_options, dict):
