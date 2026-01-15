@@ -45,6 +45,14 @@ from app.services.docx_fields import (
     format_page_number_run,
 )
 
+# =========================================================================
+# MODULE-LEVEL COMPILED REGEX PATTERNS (Performance Optimization)
+# =========================================================================
+# Compile regex once at module load instead of every function call
+NUMBERED_HEADING_PATTERN = re.compile(r'^(\d+(?:\.\d+)*)\.\s+(.+)$')
+CAPTION_PATTERN = re.compile(r'^(Hình|Sơ đồ|Bảng|Biểu đồ)[\s\d\.]*[:\.]?\s+(.+)$', re.IGNORECASE)
+WHITESPACE_PATTERN = re.compile(r"[ \t\u00A0]{2,}")
+
 
 def _paragraph_has_image(paragraph):
     """
@@ -87,7 +95,8 @@ def _collapse_internal_spaces(paragraph):
         for run in paragraph.runs:
             if not run.text:
                 continue
-            new_text = re.sub(r"[ \t\u00A0]{2,}", " ", run.text)
+            # Use module-level compiled pattern for performance
+            new_text = WHITESPACE_PATTERN.sub(" ", run.text)
             if new_text != run.text:
                 run.text = new_text
     except Exception:
@@ -112,11 +121,12 @@ def _looks_like_heading(text):
     return text.isupper()
 
 def _detect_numbered_heading(text):
+    """Detect numbered heading using cached compiled pattern."""
     text = text.strip()
     if not text:
         return None, False
-    pattern = r'^(\d+(?:\.\d+)*)\.\s+(.+)$'
-    match = re.match(pattern, text)
+    # Use module-level compiled pattern for performance
+    match = NUMBERED_HEADING_PATTERN.match(text)
     if match:
         number_part = match.group(1)
         level = number_part.count('.') + 1
@@ -246,12 +256,12 @@ def _force_caption_font(run):
 def _process_captions(doc):
     _ensure_caption_style(doc)
     figure_count = 0
-    pattern = re.compile(r'^(Hình|Sơ đồ|Bảng|Biểu đồ)[\s\d\.]*[:\.]?\s+(.+)$', re.IGNORECASE)
+    # Use module-level compiled pattern for performance
     for paragraph in doc.paragraphs:
         has_image = _paragraph_has_image(paragraph)
         text = paragraph.text.strip()
         if not text: continue
-        match = pattern.match(text)
+        match = CAPTION_PATTERN.match(text)
         if match:
             figure_count += 1
             prefix = "Hình" 
@@ -280,14 +290,19 @@ def _process_captions(doc):
 # =========================================================================
 # HÀM CHÈN TOC (MỤC LỤC) VÀ TOF (DANH MỤC HÌNH) - THỦ CÔNG
 # =========================================================================
-def _collect_headings(doc):
+def _collect_headings_and_figures_single_pass(doc):
     """
-    Thu thập tất cả headings trong document để tạo TOC thủ công
-    Returns: list of (text, level, page_estimate)
+    OPTIMIZED: Thu thập headings VÀ figures trong MỘT LẦN duyệt duy nhất
+    Thay vì duyệt 2 lần riêng biệt, gộp thành 1 pass để cải thiện hiệu suất.
+    
+    Returns: (headings_list, figures_list)
+        headings_list: list of (text, level, page_estimate)
+        figures_list: list of (text, page_estimate)
     """
     headings = []
+    figures = []
     page_estimate = 1
-    lines_per_page = 35  # Ước tính số dòng mỗi trang
+    lines_per_page = 35
     line_count = 0
     
     for paragraph in doc.paragraphs:
@@ -297,8 +312,8 @@ def _collect_headings(doc):
         if not text:
             line_count += 1
             continue
-            
-        # Kiểm tra nếu là heading
+        
+        # Check if heading
         if style_name.lower().startswith("heading"):
             try:
                 level = int(style_name.split()[-1]) if style_name.split()[-1].isdigit() else 1
@@ -307,45 +322,29 @@ def _collect_headings(doc):
             level = min(max(level, 1), 6)
             headings.append((text, level, page_estimate))
         
-        # Ước tính số trang
+        # Check if figure caption (use module-level pattern)
+        if style_name in ["UEL Figure", "Caption"] or CAPTION_PATTERN.match(text):
+            figures.append((text, page_estimate))
+        
+        # Estimate page number
         line_count += max(1, len(text) // 80 + 1)
         if line_count >= lines_per_page:
             page_estimate += 1
             line_count = 0
     
+    return headings, figures
+
+
+# Legacy wrapper functions for backward compatibility
+def _collect_headings(doc):
+    """Legacy wrapper - calls optimized single-pass function."""
+    headings, _ = _collect_headings_and_figures_single_pass(doc)
     return headings
 
 
 def _collect_figures(doc):
-    """
-    Thu thập tất cả captions hình ảnh trong document
-    Returns: list of (text, page_estimate)
-    """
-    figures = []
-    page_estimate = 1
-    lines_per_page = 35
-    line_count = 0
-    
-    pattern = re.compile(r'^(Hình|Sơ đồ|Bảng|Biểu đồ)\s*\d*[:\.]?\s*(.+)$', re.IGNORECASE)
-    
-    for paragraph in doc.paragraphs:
-        style_name = paragraph.style.name if paragraph.style else ""
-        text = paragraph.text.strip()
-        
-        if not text:
-            line_count += 1
-            continue
-        
-        # Kiểm tra nếu là caption hình ảnh
-        if style_name in ["UEL Figure", "Caption"] or pattern.match(text):
-            figures.append((text, page_estimate))
-        
-        # Ước tính số trang
-        line_count += max(1, len(text) // 80 + 1)
-        if line_count >= lines_per_page:
-            page_estimate += 1
-            line_count = 0
-    
+    """Legacy wrapper - calls optimized single-pass function."""
+    _, figures = _collect_headings_and_figures_single_pass(doc)
     return figures
 
 
@@ -434,9 +433,8 @@ def _insert_table_of_contents(doc, options, anchor=None):
     _copy_heading_style_to_toc(doc)
     _ensure_caption_style(doc) 
     
-    # Thu thập headings và figures TRƯỚC khi insert TOC
-    headings = _collect_headings(doc)
-    figures = _collect_figures(doc)
+    # OPTIMIZED: Thu thập headings và figures trong 1 lần duyệt duy nhất
+    headings, figures = _collect_headings_and_figures_single_pass(doc)
     
     logging.info(f"Tìm thấy {len(headings)} headings và {len(figures)} hình ảnh")
     

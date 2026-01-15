@@ -104,32 +104,6 @@
                         </div>
                     </div>
 
-                    <!-- Modal Preview Container -->
-                    <div id="preview-modal" class="preview-modal" style="display: none;">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h4><i class="fa-solid fa-file-pdf" style="color: #DC2626;"></i> Xem trước tài liệu</h4>
-                                <div class="modal-controls">
-                                    <button id="zoom-out-btn" class="btn-zoom" title="Thu nhỏ">
-                                        <i class="fa-solid fa-magnifying-glass-minus"></i>
-                                    </button>
-                                    <span id="zoom-level">100%</span>
-                                    <button id="zoom-in-btn" class="btn-zoom" title="Phóng to">
-                                        <i class="fa-solid fa-magnifying-glass-plus"></i>
-                                    </button>
-                                    <button id="fit-width-btn" class="btn-zoom" title="Vừa khít chiều rộng">
-                                        <i class="fa-solid fa-arrows-left-right"></i>
-                                    </button>
-                                    <button id="close-modal-btn" class="btn-close-modal" title="Đóng">
-                                        <i class="fa-solid fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="preview-frame" class="preview-frame">
-                                <p style="text-align: center; color: #6B7280;">Đang tải bản xem trước...</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </section>
@@ -247,6 +221,33 @@
             </div>
         </div>
     </footer>
+
+    <!-- Fullscreen Modal Preview Container - Outside of main content for proper overlay -->
+    <div id="preview-modal" class="preview-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4><i class="fa-solid fa-file-pdf"></i> <span id="preview-filename">Xem trước tài liệu</span></h4>
+                <div class="modal-controls">
+                    <button id="zoom-out-btn" class="btn-zoom" title="Thu nhỏ">
+                        <i class="fa-solid fa-minus"></i>
+                    </button>
+                    <span id="zoom-level">100%</span>
+                    <button id="zoom-in-btn" class="btn-zoom" title="Phóng to">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                    <button id="fit-width-btn" class="btn-zoom" title="Vừa khít chiều rộng">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                    </button>
+                    <button id="close-modal-btn" class="btn-close-modal" title="Đóng (ESC)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="preview-frame" class="preview-frame" onclick="handlePreviewFrameClick(event)">
+                <p style="text-align: center; color: #fff;">Đang tải bản xem trước...</p>
+            </div>
+        </div>
+    </div>
 
     <script src="/static/js/app.js"></script>
 

@@ -196,6 +196,10 @@ async function showPreview(isTest = false) {
 
     if (!previewModal) return;
 
+    // Update filename in modal header
+    const filename = isTest ? 'test_result.docx' : (selectedFile ? selectedFile.name : 'document.docx');
+    updatePreviewFilename(filename);
+
     previewModal.style.display = 'flex';
     previewFrame.innerHTML = '<div class="preview-loading"><div class="spinner"></div><p>Đang tạo bản xem trước PDF...</p></div>';
 
@@ -438,4 +442,33 @@ function hideResult() {
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('EasyWord App Initialized');
+
+    // Setup ESC key to close modal
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            hidePreview();
+        }
+    });
+
+    // Setup close button
+    const closeBtn = document.getElementById('close-modal-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', hidePreview);
+    }
 });
+
+// Handle click on preview frame background to close modal
+function handlePreviewFrameClick(event) {
+    // Only close if clicking directly on the preview-frame (not on PDF pages)
+    if (event.target.id === 'preview-frame' || event.target.id === 'pdf-pages') {
+        // Don't close - user might be scrolling, let them use X button or ESC
+    }
+}
+
+// Update preview filename in modal header
+function updatePreviewFilename(filename) {
+    const filenameSpan = document.getElementById('preview-filename');
+    if (filenameSpan) {
+        filenameSpan.textContent = filename || 'Xem trước tài liệu';
+    }
+}

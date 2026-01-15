@@ -190,7 +190,12 @@ async def health_check():
     return {"status": "healthy", "version": "1.0.0"}
 
 # ConvertAPI secret for PDF conversion
-CONVERTAPI_SECRET = os.getenv("CONVERTAPI_SECRET", "")
+# Try env variable first, then fallback to config.py
+try:
+    from app.config import CONVERTAPI_SECRET as CONFIG_SECRET
+    CONVERTAPI_SECRET = os.getenv("CONVERTAPI_SECRET", CONFIG_SECRET)
+except ImportError:
+    CONVERTAPI_SECRET = os.getenv("CONVERTAPI_SECRET", "")
 
 @app.post("/api/preview")
 async def preview_file(file: UploadFile = File(...)):

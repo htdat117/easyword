@@ -1,2 +1,2 @@
-# Streamlit-only app - không cần Flask
-# File này chỉ cần cho import compatibility
+# FastAPI backend - Word document formatter
+# File này cần cho import compatibility
